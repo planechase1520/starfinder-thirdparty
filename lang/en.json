@@ -177,7 +177,82 @@
 
     "Controls": {
       "ImportWizard": "Open Import Wizard",
-      "ContentBrowser": "Open Content Browser"
+      "ContentBrowser": "Open Content Browser",
+      "SchemaManager": "Open Schema Manager"
+    },
+
+    "SchemaManager": {
+      "Title": "Schema Manager",
+      "TabRegistry": "Registry",
+      "TabDiffs": "Diffs",
+      "TabMappings": "Mappings",
+      "TabRepair": "Repair",
+      "BtnScan": "Scan Current System",
+      "BtnScanning": "Scanning…",
+      "BtnRebuild": "Rebuild Registry",
+      "BtnTemplateManager": "Template Manager",
+      "BtnExportDiffs": "Export Diff Report",
+      "BtnRepairAll": "Repair All Records",
+      "NoSchemas": "No schemas discovered yet.",
+      "NoSchemasHint": "Click Scan Current System to discover document schemas from the installed Starfinder system.",
+      "NoDiffs": "No schema changes detected since the last session.",
+      "NoProfiles": "No mapping profiles built yet.",
+      "NoProfilesHint": "Run a schema scan to auto-generate profiles.",
+      "RepairNoneRun": "No repair has been run yet.",
+      "RepairNoneRunHint": "Click Repair All Records to automatically fill missing fields using schema defaults and registered templates.",
+      "ScanComplete": "Schema scan complete. {schemas} schema(s) found, {changes} change(s) detected.",
+      "ScanFailed": "Schema scan failed. See console for details.",
+      "RebuildComplete": "Schema registry rebuilt. {count} schema(s) processed.",
+      "RebuildFailed": "Rebuild failed. See console for details.",
+      "DiffsExported": "Schema diff report downloaded.",
+      "RepairComplete": "Repair complete. {saved} record(s) updated, {unchanged} unchanged.",
+      "RepairFailed": "Repair failed. See console for details.",
+      "NoRecordsToRepair": "No records in the database to repair.",
+      "ConfirmRebuildTitle": "Rebuild Schema Registry",
+      "ConfirmRebuildContent": "This will clear the cached schema data and run a full rescan. Mapping profiles will be regenerated. Continue?",
+      "SchemaChangesDetected": "{count} schema change(s) detected since last session. Open Schema Manager → Diffs tab for details."
+    },
+
+    "TemplateManager": {
+      "Title": "Template Manager",
+      "BtnAddTemplate": "Add Template",
+      "BtnClearAll": "Clear All",
+      "BtnLearnSchema": "Learn schema from this document",
+      "BtnRefresh": "Re-snapshot system data from the live document",
+      "BtnRemove": "Remove template",
+      "NoTemplates": "No templates registered yet.",
+      "NoTemplatesHint": "Click Add Template and provide a document UUID to get started.",
+      "AddTemplateTitle": "Add Template — Enter Document UUID",
+      "AddTemplateUuidLabel": "Document UUID",
+      "AddTemplateUuidHint": "Right-click any Item or Actor in Foundry and choose Copy UUID to get its UUID.",
+      "NotesTitle": "Notes (optional)",
+      "NotesPlaceholder": "e.g. Standard ranged weapon template",
+      "FetchingDocument": "Fetching document {uuid}…",
+      "DocumentNotFound": "No document found at UUID: {uuid}",
+      "InvalidDocumentType": "The selected document has no type property. Items and Actors are supported.",
+      "TemplateRegistered": "Template registered: {name} ({subtype})",
+      "TemplateRemoved": "Template removed: {name}",
+      "TemplateRefreshed": "Template refreshed: {name}",
+      "DocumentGone": "Document no longer exists at UUID: {uuid}",
+      "SchemaLearned": "Schema learned from \"{name}\". {count} field(s) discovered.",
+      "SchemaLearnFailed": "Could not discover schema from template \"{name}\".",
+      "AllCleared": "All templates cleared.",
+      "NoneToClear": "No templates to clear.",
+      "AddFailed": "Failed to add template. See console for details.",
+      "RefreshFailed": "Failed to refresh template.",
+      "LearnFailed": "Failed to learn schema from template.",
+      "ConfirmRemoveTitle": "Remove Template",
+      "ConfirmClearTitle": "Clear All Templates",
+      "ConfirmClearContent": "Remove all registered templates? This cannot be undone."
+    },
+
+    "Repair": {
+      "ActionFilledDefault": "Applied schema default",
+      "ActionFilledTemplate": "Applied template default",
+      "ActionNormalized": "Normalized type",
+      "ActionSkipped": "Could not auto-repair",
+      "NoSchemaMapping": "No schema mapping for category: \"{category}\". Cannot repair.",
+      "NoSchemaDiscovered": "No discovered schema for {docType}.{subtype}. Open Schema Manager and run Scan first."
     }
   }
 }
