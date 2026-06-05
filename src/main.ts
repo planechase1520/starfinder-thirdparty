@@ -1,0 +1,157 @@
+/**
+ * Starfinder Third Party Library — Main Entry Point
+ *
+ * This file is the Rollup bundle entry point. It:
+ *   1. Registers module settings
+ *   2. Registers all parsers with the ParserRegistry
+ *   3. Registers the Starfinder adapter with the AdapterRegistry
+ *   4. Adds GM-only scene controls / toolbar buttons
+ *   5. Exposes the public module API on globalThis for macro access
+ *
+ * Hooks used:
+ *   - init:    register settings, parsers, adapters
+ *   - ready:   finalize setup, check system compatibility, log banner
+ *   - getSceneControlButtons: add toolbar button
+ */
+
+import { registerSettings, getSetting, SETTINGS } from "./module-settings.js";
+import { ModuleLogger } from "./utils/logger.js";
+
+import { ParserRegistry } from "./parsers/parser-registry.js";
+import { CsvParser } from "./parsers/csv-parser.js";
+import { JsonParser } from "./parsers/json-parser.js";
+import { OcrParser } from "./parsers/ocr-parser.js";
+import { ManualParser } from "./parsers/manual-parser.js";
+
+import { AdapterRegistry } from "./adapters/adapter-registry.js";
+import { StarfinderAdapter } from "./adapters/starfinder/starfinder.adapter.js";
+
+import { ImportWizardApp } from "./ui/import-wizard.js";
+import { ContentBrowserApp } from "./ui/content-browser.js";
+
+// ── Module constants ────────────────────────────────────────────────────────
+const MODULE_ID = "starfinder-thirdparty";
+const MODULE_VERSION = "1.0.0";
+const SUPPORTED_SYSTEM = "sfrpg";
+
+// ── Public API type (exposed on globalThis) ─────────────────────────────────
+interface SF3PLApi {
+  openImportWizard: () => void;
+  openContentBrowser: () => void;
+  parsers: typeof ParserRegistry;
+  adapters: typeof AdapterRegistry;
+  version: string;
+}
+
+// ── init hook ───────────────────────────────────────────────────────────────
+Hooks.once("init", () => {
+  ModuleLogger.info(`[Main] Initializing ${MODULE_ID} v${MODULE_VERSION}`);
+
+  // Register module settings
+  registerSettings();
+
+  // Apply debug mode if previously set
+  const debugMode = getSetting<boolean>(SETTINGS.DEBUG_MODE);
+  if (debugMode) {
+    ModuleLogger.setLevel("debug");
+    ModuleLogger.debug("[Main] Debug mode active.");
+  }
+
+  // Register parsers
+  ParserRegistry.register(new JsonParser());
+  ParserRegistry.register(new CsvParser());
+  ParserRegistry.register(new OcrParser());
+  ParserRegistry.register(new ManualParser());
+  ModuleLogger.info(`[Main] Registered parsers: ${ParserRegistry.getTypes().join(", ")}`);
+
+  // Register the Starfinder adapter
+  AdapterRegistry.register(new StarfinderAdapter());
+  ModuleLogger.info(`[Main] Registered adapters: ${AdapterRegistry.getRegisteredSystemIds().join(", ")}`);
+
+  // Register Handlebars helpers used in templates
+  registerHandlebarsHelpers();
+});
+
+// ── ready hook ──────────────────────────────────────────────────────────────
+Hooks.once("ready", () => {
+  const systemId = game.system?.id;
+
+  if (systemId !== SUPPORTED_SYSTEM) {
+    ModuleLogger.warn(
+      `[Main] Module is designed for '${SUPPORTED_SYSTEM}' but current system is '${systemId}'. ` +
+      "Some features may not work correctly."
+    );
+    ui.notifications.warn(
+      `Starfinder Third Party Library: This module is designed for the Starfinder (${SUPPORTED_SYSTEM}) system.`
+    );
+  }
+
+  // Expose public API on the module object for macro access
+  const moduleObj = game.modules.get(MODULE_ID) as unknown as Record<string, unknown>;
+  const api: SF3PLApi = {
+    openImportWizard: () => void new ImportWizardApp().render(true),
+    openContentBrowser: () => void new ContentBrowserApp().render(true),
+    parsers: ParserRegistry,
+    adapters: AdapterRegistry,
+    version: MODULE_VERSION,
+  };
+  moduleObj["api"] = api;
+
+  ModuleLogger.info(
+    `%c Starfinder Third Party Library v${MODULE_VERSION} ready! ` +
+    "Access module API via: game.modules.get('starfinder-thirdparty').api",
+    "color: #3a7bd5; font-weight: bold; font-size: 1.1em;"
+  );
+});
+
+// ── Scene control buttons ────────────────────────────────────────────────────
+Hooks.on("getSceneControlButtons", (controls: unknown[]) => {
+  if (!game.user?.isGM) return;
+
+  (controls as Array<{ name: string; tools: unknown[] }>).push({
+    name: "sf3pl",
+    tools: [
+      {
+        name: "import-wizard",
+        title: "SF3PL.Controls.ImportWizard",
+        icon: "fas fa-file-import",
+        button: true,
+        onClick: () => void new ImportWizardApp().render(true),
+      },
+      {
+        name: "content-browser",
+        title: "SF3PL.Controls.ContentBrowser",
+        icon: "fas fa-book-open",
+        button: true,
+        onClick: () => void new ContentBrowserApp().render(true),
+      },
+    ],
+  });
+});
+
+// ── Handlebars helpers ───────────────────────────────────────────────────────
+function registerHandlebarsHelpers(): void {
+  // Handlebars is available globally in Foundry
+  const Handlebars = (globalThis as unknown as Record<string, unknown>)["Handlebars"] as {
+    registerHelper: (name: string, fn: (...args: unknown[]) => unknown) => void;
+  } | undefined;
+
+  if (!Handlebars) {
+    ModuleLogger.warn("[Main] Handlebars not available; skipping helper registration.");
+    return;
+  }
+
+  // {{#if (gt a b)}} — greater than comparison
+  Handlebars.registerHelper("gt", (a: unknown, b: unknown) => Number(a) > Number(b));
+
+  // {{#if (eq a b)}} — strict equality
+  Handlebars.registerHelper("eq", (a: unknown, b: unknown) => a === b);
+
+  // {{#if (includes array value)}} — array includes check
+  Handlebars.registerHelper("includes", (arr: unknown, value: unknown) => {
+    if (!Array.isArray(arr)) return false;
+    return (arr as unknown[]).includes(value);
+  });
+
+  ModuleLogger.debug("[Main] Handlebars helpers registered: gt, eq, includes");
+}

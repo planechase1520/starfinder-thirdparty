@@ -1,0 +1,173 @@
+{
+  "id": "starfinder-thirdparty",
+  "title": "Starfinder Third Party Library",
+  "description": "A reusable content-management module that allows a GM to import and organize legally owned third-party Starfinder 1E content into Foundry VTT. Supports CSV, JSON, and OCR text import pipelines with full validation and compendium management.",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Starfinder Third Party Library Contributors",
+      "discord": "",
+      "url": ""
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "sfrpg",
+        "type": "system",
+        "compatibility": {
+          "minimum": "0.25.0"
+        }
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/starfinder-thirdparty.js"
+  ],
+  "styles": [
+    "styles/starfinder-thirdparty.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "packs": [
+    {
+      "name": "sftpl-weapons",
+      "label": "SF3PL: Weapons",
+      "path": "packs/weapons",
+      "type": "Item",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "weapon" } }
+    },
+    {
+      "name": "sftpl-armor",
+      "label": "SF3PL: Armor",
+      "path": "packs/armor",
+      "type": "Item",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "armor" } }
+    },
+    {
+      "name": "sftpl-equipment",
+      "label": "SF3PL: Equipment",
+      "path": "packs/equipment",
+      "type": "Item",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "equipment" } }
+    },
+    {
+      "name": "sftpl-augmentations",
+      "label": "SF3PL: Augmentations",
+      "path": "packs/augmentations",
+      "type": "Item",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "augmentation" } }
+    },
+    {
+      "name": "sftpl-feats",
+      "label": "SF3PL: Feats",
+      "path": "packs/feats",
+      "type": "Item",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "feat" } }
+    },
+    {
+      "name": "sftpl-spells",
+      "label": "SF3PL: Spells",
+      "path": "packs/spells",
+      "type": "Item",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "spell" } }
+    },
+    {
+      "name": "sftpl-species",
+      "label": "SF3PL: Species",
+      "path": "packs/species",
+      "type": "Item",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "race" } }
+    },
+    {
+      "name": "sftpl-themes",
+      "label": "SF3PL: Themes",
+      "path": "packs/themes",
+      "type": "Item",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "theme" } }
+    },
+    {
+      "name": "sftpl-classes",
+      "label": "SF3PL: Classes",
+      "path": "packs/classes",
+      "type": "Item",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "class" } }
+    },
+    {
+      "name": "sftpl-archetypes",
+      "label": "SF3PL: Archetypes",
+      "path": "packs/archetypes",
+      "type": "Item",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "archetypeFeature" } }
+    },
+    {
+      "name": "sftpl-vehicles",
+      "label": "SF3PL: Vehicles",
+      "path": "packs/vehicles",
+      "type": "Actor",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "vehicle" } }
+    },
+    {
+      "name": "sftpl-starships",
+      "label": "SF3PL: Starships",
+      "path": "packs/starships",
+      "type": "Actor",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "starship" } }
+    },
+    {
+      "name": "sftpl-npcs",
+      "label": "SF3PL: NPCs",
+      "path": "packs/npcs",
+      "type": "Actor",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "npc" } }
+    },
+    {
+      "name": "sftpl-hazards",
+      "label": "SF3PL: Hazards",
+      "path": "packs/hazards",
+      "type": "Actor",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "hazard" } }
+    },
+    {
+      "name": "sftpl-journals",
+      "label": "SF3PL: Journals",
+      "path": "packs/journals",
+      "type": "JournalEntry",
+      "system": "sfrpg",
+      "flags": { "starfinder-thirdparty": { "contentType": "journal" } }
+    }
+  ],
+  "flags": {
+    "starfinder-thirdparty": {
+      "allowedSystems": ["sfrpg"],
+      "schemaVersion": "1.0.0"
+    }
+  },
+  "url": "",
+  "manifest": "",
+  "download": "",
+  "license": "MIT"
+}

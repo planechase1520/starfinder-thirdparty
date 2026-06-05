@@ -1,0 +1,7 @@
+type,name,level,price,bulk,weaponType,damage,damageType,range,capacity,usage,special,rarity,sourceBook,publisher,author,pageNumber,tags,notes
+weapon,Advanced Seeker Rifle I,7,6280,1,ranged,2d8,P,100,12,2,,common,Starfinder Core Rulebook,Paizo,Paizo Staff,173,"sniper,ranged",Long-range precision weapon
+weapon,Thunderstrike Sonic Rifle I,4,2200,1,ranged,1d10,So,60,40,4,deafen,common,Starfinder Core Rulebook,Paizo,Paizo Staff,178,"sonic,longarm",Deafen on critical
+weapon,Static Arc Pistol,2,750,L,ranged,1d6,E,50,20,2,arc 2,common,Starfinder Core Rulebook,Paizo,Paizo Staff,175,"electric,small arm,arc",Arc effect on hit
+armor,Iridishell Basic,3,1250,2,,,,,,,,,Starfinder Core Rulebook,Paizo,Paizo Staff,196,"heavy armor",Heavy armor with good bulk trade-off
+feat,Improved Initiative,,,,,,,,,,,,Starfinder Core Rulebook,Paizo,Paizo Staff,158,"combat feat,initiative",+4 to initiative checks
+spell,Magic Missile,1,,,,,,,,,,,,Starfinder Core Rulebook,Paizo,Paizo Staff,361,"evocation,no save",Force damage 3 missiles

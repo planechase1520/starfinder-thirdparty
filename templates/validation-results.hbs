@@ -1,0 +1,95 @@
+{{!-- Validation Results Template --}}
+<div class="sf3pl-validation">
+
+  {{!-- Summary Header --}}
+  <div class="sf3pl-validation-header">
+    <div class="sf3pl-val-stat">
+      <span class="sf3pl-val-num">{{totalChecked}}</span>
+      <span class="sf3pl-val-label">Checked</span>
+    </div>
+    <div class="sf3pl-val-stat sf3pl-success">
+      <span class="sf3pl-val-num">{{passed}}</span>
+      <span class="sf3pl-val-label">Passed</span>
+    </div>
+    <div class="sf3pl-val-stat {{#if failed}}sf3pl-failure{{/if}}">
+      <span class="sf3pl-val-num">{{failed}}</span>
+      <span class="sf3pl-val-label">Failed</span>
+    </div>
+    <div class="sf3pl-val-stat">
+      <span class="sf3pl-val-num">{{passRate}}%</span>
+      <span class="sf3pl-val-label">Pass Rate</span>
+    </div>
+  </div>
+
+  <div class="sf3pl-val-meta">
+    Generated: {{generatedAt}}
+  </div>
+
+  {{!-- Controls --}}
+  <div class="sf3pl-val-controls">
+    {{#if failed}}
+    <button id="sf3pl-toggle-failed" class="sf3pl-btn sf3pl-btn-secondary">
+      {{#if showOnlyFailed}}
+      <i class="fas fa-list"></i> Show All
+      {{else}}
+      <i class="fas fa-circle-xmark"></i> Show Failed Only
+      {{/if}}
+    </button>
+    {{/if}}
+    <button id="sf3pl-btn-download-validation" class="sf3pl-btn sf3pl-btn-secondary">
+      <i class="fas fa-download"></i> Download Report
+    </button>
+  </div>
+
+  {{!-- All Passed Banner --}}
+  {{#if allPassed}}
+  <div class="sf3pl-all-passed">
+    <i class="fas fa-circle-check"></i>
+    All entries passed validation! You are ready to import.
+  </div>
+  {{/if}}
+
+  {{!-- Results List --}}
+  <div class="sf3pl-val-results">
+    {{#each results}}
+    <div class="sf3pl-val-result {{statusClass}}">
+      <div class="sf3pl-val-result-header">
+        <i class="fas {{statusIcon}}"></i>
+        <strong class="sf3pl-val-name">{{name}}</strong>
+        <span class="sf3pl-badge">{{contentType}}</span>
+        {{#if ref}}<span class="sf3pl-ref">{{ref}}</span>{{/if}}
+        <span class="sf3pl-val-counts">
+          {{#if errorCount}}<span class="sf3pl-error-badge">{{errorCount}} err</span>{{/if}}
+          {{#if warnCount}}<span class="sf3pl-warn-badge">{{warnCount}} warn</span>{{/if}}
+        </span>
+      </div>
+
+      {{#if errors}}
+      <ul class="sf3pl-issue-list sf3pl-errors">
+        {{#each errors}}
+        <li>
+          <code class="sf3pl-code">{{code}}</code>
+          {{message}}
+          {{#if field}}<em class="sf3pl-field">({{field}})</em>{{/if}}
+        </li>
+        {{/each}}
+      </ul>
+      {{/if}}
+
+      {{#if warnings}}
+      <ul class="sf3pl-issue-list sf3pl-warnings">
+        {{#each warnings}}
+        <li>
+          <i class="fas fa-triangle-exclamation"></i>
+          <code class="sf3pl-code">{{code}}</code>
+          {{message}}
+          {{#if field}}<em class="sf3pl-field">({{field}})</em>{{/if}}
+        </li>
+        {{/each}}
+      </ul>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+
+</div>

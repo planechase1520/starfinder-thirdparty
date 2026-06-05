@@ -1,0 +1,98 @@
+{
+  "SF3PL": {
+    "ModuleTitle": "Starfinder Third Party Library",
+
+    "Settings": {
+      "DebugMode": {
+        "Name": "Debug Mode",
+        "Hint": "Enable verbose logging to the browser console for troubleshooting."
+      },
+      "SkipDuplicates": {
+        "Name": "Skip Duplicate Entries",
+        "Hint": "When importing, skip entries whose name already exists in the target compendium pack."
+      },
+      "DefaultPublisher": {
+        "Name": "Default Publisher",
+        "Hint": "Default publisher name pre-filled in the Import Wizard metadata form."
+      }
+    },
+
+    "UI": {
+      "ImportWizard": {
+        "Title": "Import Wizard",
+        "Step1": "Select Source",
+        "Step2": "Metadata",
+        "Step3": "Validate",
+        "Step4": "Import",
+        "BtnNext": "Next",
+        "BtnBack": "Back",
+        "BtnImport": "Import Valid Entries",
+        "ParserLabel": "Import Format",
+        "ContentTypeLabel": "Default Content Type",
+        "UploadLabel": "Upload File",
+        "PasteLabel": "Or Paste Raw Data"
+      },
+      "ContentBrowser": {
+        "Title": "Content Browser",
+        "Search": "Search by name...",
+        "FilterType": "Content Type",
+        "FilterPublisher": "Publisher",
+        "FilterSourceBook": "Source Book",
+        "ClearFilters": "Clear Filters",
+        "OpenCompendium": "Open Compendium",
+        "Refresh": "Refresh",
+        "NoEntries": "No entries found. Import content using the Import Wizard.",
+        "Loading": "Loading content..."
+      },
+      "ImportReport": {
+        "Title": "Import Report",
+        "Download": "Download .txt Report",
+        "DownloadJson": "Download JSON Errors"
+      },
+      "ValidationResults": {
+        "Title": "Validation Results",
+        "ShowFailed": "Show Failed Only",
+        "ShowAll": "Show All",
+        "Download": "Download Report",
+        "AllPassed": "All entries passed validation!"
+      }
+    },
+
+    "ContentTypes": {
+      "weapon": "Weapon",
+      "armor": "Armor",
+      "equipment": "Equipment",
+      "augmentation": "Augmentation",
+      "feat": "Feat",
+      "spell": "Spell",
+      "race": "Species",
+      "theme": "Theme",
+      "class": "Class",
+      "archetypeFeature": "Archetype",
+      "npc": "NPC",
+      "vehicle": "Vehicle",
+      "starship": "Starship",
+      "hazard": "Hazard",
+      "journal": "Journal Entry"
+    },
+
+    "Errors": {
+      "NoAdapter": "No adapter registered for the current game system.",
+      "PackNotFound": "Compendium pack not found. Ensure the module is active and the pack exists.",
+      "ParseFailed": "Failed to parse input data.",
+      "ImportFailed": "Import failed. See the Import Report for details.",
+      "NotGM": "Only the Game Master can import content."
+    },
+
+    "Notifications": {
+      "ImportComplete": "Import complete: {success} created, {failed} failed, {skipped} skipped.",
+      "ValidationWarning": "{count} entries failed validation and will be skipped.",
+      "ParseWarning": "Parsing completed with {count} error(s). Review before continuing."
+    },
+
+    "Controls": {
+      "ImportWizard": "Open Import Wizard",
+      "ContentBrowser": "Open Content Browser"
+    }
+  }
+}

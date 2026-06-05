@@ -1,0 +1,38 @@
+[
+  {
+    "type": "feat",
+    "name": "Cleave",
+    "featType": "combat",
+    "prerequisites": "Str 13, base attack bonus +1",
+    "description": "As a standard action, you can make a single melee attack, and if you hit, you can attempt a second melee attack (using the same bonus) against a foe that is adjacent to the first and also within your reach.",
+    "sourceBook": "Starfinder Core Rulebook",
+    "publisher": "Paizo",
+    "author": "Paizo Staff",
+    "pageNumber": 155,
+    "tags": ["core", "combat feat", "melee"]
+  },
+  {
+    "type": "feat",
+    "name": "Coordinated Shot",
+    "featType": "combat",
+    "prerequisites": "base attack bonus +1",
+    "description": "When you and an ally both threaten a target, your ally gains a +1 bonus to attack rolls against that target.",
+    "sourceBook": "Starfinder Core Rulebook",
+    "publisher": "Paizo",
+    "author": "Paizo Staff",
+    "pageNumber": 156,
+    "tags": ["core", "combat feat", "teamwork"]
+  },
+  {
+    "type": "feat",
+    "name": "Skill Focus (Perception)",
+    "featType": "general",
+    "prerequisites": "",
+    "description": "Choose a skill. You get a +3 insight bonus to checks with this skill. If you have 10 or more ranks in this skill, this bonus increases to +6.",
+    "sourceBook": "Starfinder Core Rulebook",
+    "publisher": "Paizo",
+    "author": "Paizo Staff",
+    "pageNumber": 162,
+    "tags": ["core", "skill feat"]
+  }
+]

@@ -1,0 +1,103 @@
+{{!-- Import Report Template --}}
+<div class="sf3pl-report">
+
+  {{!-- Session Header --}}
+  <div class="sf3pl-report-header {{session.statusClass}}">
+    <div class="sf3pl-report-title">
+      <i class="fas fa-clipboard-list"></i>
+      Import Report
+      <span class="sf3pl-session-status">{{session.status}}</span>
+    </div>
+    <div class="sf3pl-report-meta">
+      <span><i class="fas fa-calendar"></i> {{session.startedAt}}</span>
+      <span><i class="fas fa-file"></i> {{session.sourceFile}}</span>
+      <span><i class="fas fa-cog"></i> {{session.systemId}} / {{session.parserType}}</span>
+    </div>
+  </div>
+
+  {{!-- Stats --}}
+  <div class="sf3pl-stats-row">
+    <div class="sf3pl-stat-card">
+      <span class="sf3pl-stat-num">{{session.totalEntries}}</span>
+      <span class="sf3pl-stat-label">Total</span>
+    </div>
+    <div class="sf3pl-stat-card sf3pl-success">
+      <span class="sf3pl-stat-num">{{session.successCount}}</span>
+      <span class="sf3pl-stat-label">Created</span>
+    </div>
+    <div class="sf3pl-stat-card {{#if session.failureCount}}sf3pl-failure{{/if}}">
+      <span class="sf3pl-stat-num">{{session.failureCount}}</span>
+      <span class="sf3pl-stat-label">Failed</span>
+    </div>
+    <div class="sf3pl-stat-card">
+      <span class="sf3pl-stat-num">{{session.skippedCount}}</span>
+      <span class="sf3pl-stat-label">Skipped</span>
+    </div>
+    <div class="sf3pl-stat-card">
+      <span class="sf3pl-stat-num">{{session.successRate}}%</span>
+      <span class="sf3pl-stat-label">Success Rate</span>
+    </div>
+  </div>
+
+  {{!-- Created Documents --}}
+  {{#if hasCreatedDocs}}
+  <div class="sf3pl-section">
+    <h4><i class="fas fa-check-circle sf3pl-success-icon"></i> Created Documents ({{createdDocuments.length}})</h4>
+    <div class="sf3pl-doc-list">
+      {{#each createdDocuments}}
+      <div class="sf3pl-doc-item">
+        <i class="fas {{typeIcon}}"></i>
+        <span class="sf3pl-doc-name">{{name}}</span>
+        <span class="sf3pl-doc-pack">→ {{packName}}</span>
+        <span class="sf3pl-doc-type sf3pl-badge">{{contentType}}</span>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+  {{/if}}
+
+  {{!-- Errors --}}
+  {{#if hasErrors}}
+  <div class="sf3pl-section sf3pl-errors">
+    <h4><i class="fas fa-circle-xmark sf3pl-error-icon"></i> Errors ({{errors.length}})</h4>
+    <ul class="sf3pl-issue-list">
+      {{#each errors}}
+      <li class="sf3pl-error-item">
+        <code class="sf3pl-code">{{code}}</code>
+        {{message}}
+        {{#if sourceReference}}<span class="sf3pl-ref">[{{sourceReference}}]</span>{{/if}}
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+  {{/if}}
+
+  {{!-- Warnings --}}
+  {{#if hasWarnings}}
+  <div class="sf3pl-section sf3pl-warnings">
+    <h4><i class="fas fa-triangle-exclamation sf3pl-warn-icon"></i> Warnings ({{warnings.length}})</h4>
+    <ul class="sf3pl-issue-list">
+      {{#each warnings}}
+      <li class="sf3pl-warn-item">
+        <code class="sf3pl-code">{{code}}</code>
+        {{message}}
+        {{#if sourceReference}}<span class="sf3pl-ref">[{{sourceReference}}]</span>{{/if}}
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+  {{/if}}
+
+  {{!-- Download Actions --}}
+  <div class="sf3pl-report-actions">
+    <button id="sf3pl-btn-download-session" class="sf3pl-btn sf3pl-btn-secondary">
+      <i class="fas fa-download"></i> Download .txt Report
+    </button>
+    {{#if hasErrors}}
+    <button id="sf3pl-btn-download-json" class="sf3pl-btn sf3pl-btn-secondary">
+      <i class="fas fa-code"></i> Download JSON Errors
+    </button>
+    {{/if}}
+  </div>
+
+</div>

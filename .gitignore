@@ -1,0 +1,10 @@
+node_modules/
+scripts/starfinder-thirdparty.js
+scripts/starfinder-thirdparty.js.map
+dist/
+build/
+.cache/
+*.log
+.DS_Store
+Thumbs.db
+packs/
