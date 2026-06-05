@@ -29,6 +29,8 @@ import { StarfinderAdapter } from "./adapters/starfinder/starfinder.adapter.js";
 import { ImportWizardApp } from "./ui/import-wizard.js";
 import { ContentBrowserApp } from "./ui/content-browser.js";
 import { ContentDatabase } from "./database/content-database.js";
+import { ConverterRegistry } from "./adapters/starfinder/converter-registry.js";
+import { ConversionPipeline } from "./pipeline/conversion-pipeline.js";
 
 // ── Module constants ────────────────────────────────────────────────────────
 const MODULE_ID = "starfinder-thirdparty";
@@ -42,6 +44,8 @@ interface SF3PLApi {
   parsers: typeof ParserRegistry;
   adapters: typeof AdapterRegistry;
   database: typeof ContentDatabase;
+  converters: ConverterRegistry;
+  pipeline: ConversionPipeline;
   version: string;
 }
 
@@ -93,6 +97,9 @@ Hooks.once("ready", () => {
     ModuleLogger.info(`[Main] ContentDatabase ready: ${ContentDatabase.getAll().length} record(s).`);
   });
 
+  // Build the Starfinder converter registry
+  const converterRegistry = ConverterRegistry.build();
+
   // Expose public API on the module object for macro access
   const moduleObj = game.modules.get(MODULE_ID) as unknown as Record<string, unknown>;
   const api: SF3PLApi = {
@@ -101,6 +108,8 @@ Hooks.once("ready", () => {
     parsers: ParserRegistry,
     adapters: AdapterRegistry,
     database: ContentDatabase,
+    converters: converterRegistry,
+    pipeline: new ConversionPipeline(converterRegistry),
     version: MODULE_VERSION,
   };
   moduleObj["api"] = api;

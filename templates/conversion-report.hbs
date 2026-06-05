@@ -1,0 +1,127 @@
+{{!-- Conversion Report Template — Milestone 3 --}}
+<div class="sf3pl-conversion-report-inner">
+
+  {{!-- Header Stats --}}
+  <div class="sf3pl-report-header">
+    <div class="sf3pl-report-meta">
+      <span class="sf3pl-report-run-id">Run: {{runId}}</span>
+      <span class="sf3pl-report-elapsed">Duration: {{elapsedMs}}ms</span>
+    </div>
+
+    <div class="sf3pl-report-stats">
+      <div class="sf3pl-stat-card sf3pl-stat-total">
+        <span class="sf3pl-stat-value">{{stats.total}}</span>
+        <span class="sf3pl-stat-label">Total</span>
+      </div>
+      <div class="sf3pl-stat-card sf3pl-stat-imported">
+        <span class="sf3pl-stat-value">{{stats.imported}}</span>
+        <span class="sf3pl-stat-label">Imported</span>
+      </div>
+      <div class="sf3pl-stat-card sf3pl-stat-updated">
+        <span class="sf3pl-stat-value">{{stats.updated}}</span>
+        <span class="sf3pl-stat-label">Updated</span>
+      </div>
+      <div class="sf3pl-stat-card sf3pl-stat-skipped">
+        <span class="sf3pl-stat-value">{{stats.skipped}}</span>
+        <span class="sf3pl-stat-label">Skipped</span>
+      </div>
+      <div class="sf3pl-stat-card sf3pl-stat-failed {{#if hasFailed}}sf3pl-stat-has-errors{{/if}}">
+        <span class="sf3pl-stat-value">{{stats.failed}}</span>
+        <span class="sf3pl-stat-label">Failed</span>
+      </div>
+    </div>
+
+    <div class="sf3pl-report-actions">
+      <button id="sf3pl-report-export-json" class="sf3pl-btn sf3pl-btn-secondary" type="button">
+        <i class="fas fa-download"></i> Export JSON
+      </button>
+      <button id="sf3pl-report-copy" class="sf3pl-btn sf3pl-btn-secondary" type="button">
+        <i class="fas fa-clipboard"></i> Copy
+      </button>
+    </div>
+  </div>
+
+  {{!-- Filter Tabs --}}
+  <div class="sf3pl-report-filters">
+    {{#each filterOptions}}
+      <button
+        class="sf3pl-filter-tab {{#if active}}active{{/if}}"
+        data-filter="{{value}}"
+        type="button"
+      >{{label}}</button>
+    {{/each}}
+  </div>
+
+  {{!-- Results Table --}}
+  <div class="sf3pl-report-body">
+    {{#if isEmpty}}
+      <div class="sf3pl-empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>No records match the current filter.</p>
+      </div>
+    {{else}}
+      <table class="sf3pl-report-table">
+        <thead>
+          <tr>
+            <th class="sf3pl-col-status">Status</th>
+            <th class="sf3pl-col-name">Record Name</th>
+            <th class="sf3pl-col-category">Category</th>
+            <th class="sf3pl-col-document">Document</th>
+            <th class="sf3pl-col-pack">Pack</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each rows}}
+            <tr class="sf3pl-report-row sf3pl-report-row--{{dispositionCss}} {{#if hasDetails}}sf3pl-has-details{{/if}}">
+              <td class="sf3pl-col-status">
+                <span class="sf3pl-disposition-badge sf3pl-badge--{{dispositionCss}}" title="{{dispositionLabel}}">
+                  <i class="fas {{dispositionIcon}}"></i>
+                  {{dispositionLabel}}
+                </span>
+              </td>
+              <td class="sf3pl-col-name">
+                {{recordName}}
+                {{#if hasWarnings}}
+                  <span class="sf3pl-warning-badge" title="{{warnings.length}} warning(s)">
+                    <i class="fas fa-triangle-exclamation"></i> {{warnings.length}}
+                  </span>
+                {{/if}}
+                {{#if hasErrors}}
+                  <span class="sf3pl-error-badge" title="{{errors.length}} error(s)">
+                    <i class="fas fa-circle-xmark"></i> {{errors.length}}
+                  </span>
+                {{/if}}
+              </td>
+              <td class="sf3pl-col-category">{{category}}</td>
+              <td class="sf3pl-col-document">{{documentName}}</td>
+              <td class="sf3pl-col-pack sf3pl-pack-id" title="{{packId}}">{{packId}}</td>
+            </tr>
+            {{#if hasDetails}}
+              <tr class="sf3pl-report-details-row">
+                <td colspan="5">
+                  {{#if hasWarnings}}
+                    <div class="sf3pl-report-warnings">
+                      <strong><i class="fas fa-triangle-exclamation"></i> Warnings:</strong>
+                      <ul>
+                        {{#each warnings}}<li>{{this}}</li>{{/each}}
+                      </ul>
+                    </div>
+                  {{/if}}
+                  {{#if hasErrors}}
+                    <div class="sf3pl-report-errors">
+                      <strong><i class="fas fa-circle-xmark"></i> Errors:</strong>
+                      <ul>
+                        {{#each errors}}<li>{{this}}</li>{{/each}}
+                      </ul>
+                    </div>
+                  {{/if}}
+                </td>
+              </tr>
+            {{/if}}
+          {{/each}}
+        </tbody>
+      </table>
+    {{/if}}
+  </div>
+
+</div>

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "3.0.0",
+  "category": "feat",
+  "description": "Field mappings from rawContent keys to SFRPG feat system data paths.",
+  "fields": [
+    { "source": "featType",       "target": "type",                    "type": "string",  "default": "general" },
+    { "source": "type",           "target": "type",                    "type": "string",  "default": "general" },
+    { "source": "prerequisites",  "target": "prerequisites.parts",     "type": "array",   "default": [] },
+    { "source": "prereqs",        "target": "prerequisites.parts",     "type": "array",   "default": [] },
+    { "source": "activation",     "target": "activation.type",         "type": "string",  "default": "passive" },
+    { "source": "activationCost", "target": "activation.cost",         "type": "number",  "default": 0 },
+    { "source": "activationCondition", "target": "activation.condition", "type": "string", "default": "" },
+    { "source": "rarity",         "target": "rarity",                  "type": "string",  "default": "common" },
+    { "source": "description",    "target": "description.value",       "type": "string",  "default": "" }
+  ]
+}

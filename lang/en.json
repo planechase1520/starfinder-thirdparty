@@ -60,7 +60,37 @@
         "NoMatchFilters": "No records match the current filters.",
         "NoNotes": "No notes",
         "RawContent": "Raw Content",
-        "SelectAll": "Select all visible"
+        "SelectAll": "Select all visible",
+        "ConvertSelected": "Convert Selected",
+        "ConvertCategory": "Convert Category",
+        "BuildCompendium": "Build Compendium",
+        "RebuildCompendium": "Rebuild",
+        "ConversionToolbar": "Compendium"
+      },
+      "ConversionReport": {
+        "Title": "Conversion Report",
+        "RunId": "Run ID",
+        "Duration": "Duration",
+        "Total": "Total",
+        "Imported": "Imported",
+        "Updated": "Updated",
+        "Skipped": "Skipped",
+        "Failed": "Failed",
+        "ExportJson": "Export JSON",
+        "Copy": "Copy",
+        "FilterAll": "All",
+        "FilterImported": "Imported",
+        "FilterUpdated": "Updated",
+        "FilterSkipped": "Skipped",
+        "FilterFailed": "Failed",
+        "Status": "Status",
+        "RecordName": "Record Name",
+        "Category": "Category",
+        "Document": "Document",
+        "Pack": "Pack",
+        "NoResults": "No records match the current filter.",
+        "Warnings": "Warnings",
+        "Errors": "Errors"
       },
       "ImportReport": {
         "Title": "Import Report",
@@ -102,7 +132,10 @@
       "NotGM": "Only the Game Master can import content.",
       "DatabaseNotReady": "Content database is not initialized. Try again after the world finishes loading.",
       "SaveFailed": "Failed to save records to the database.",
-      "DeleteFailed": "Failed to delete record from the database."
+      "DeleteFailed": "Failed to delete record from the database.",
+      "NoConverterForCategory": "No converter is registered for category \"{category}\".",
+      "CompendiumWriteFailed": "Failed to write document to compendium: {message}",
+      "NothingToConvert": "No records to convert. Import content first."
     },
 
     "Notifications": {
@@ -114,7 +147,11 @@
       "DbBulkDeleted": "Deleted {count} record(s).",
       "NotesSaved": "Notes and tags saved.",
       "NoParsedRecords": "No records were parsed from the input. Check the format.",
-      "NoValidRecords": "No valid records to save."
+      "NoValidRecords": "No valid records to save.",
+      "ConversionStarted": "Converting {count} record(s)…",
+      "ConversionComplete": "Conversion complete: {imported} imported, {updated} updated, {skipped} skipped, {failed} failed.",
+      "CompendiumBuilt": "Compendium built successfully.",
+      "NoRecordsSelected": "No records selected. Use the checkboxes to select records first."
     },
 
     "Validation": {

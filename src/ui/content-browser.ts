@@ -18,6 +18,8 @@ import type { ContentRecord, ContentFilter, SortConfig, SortField, ContentCatego
 import { CONTENT_CATEGORIES, CATEGORY_LABELS } from "../database/content-record.js";
 import { ContentDatabase } from "../database/content-database.js";
 import { ContentExporter } from "../export/content-exporter.js";
+import { ConversionPipeline } from "../pipeline/conversion-pipeline.js";
+import type { PipelineReport } from "../pipeline/pipeline-report.js";
 import { ModuleLogger } from "../utils/logger.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -360,6 +362,26 @@ export class ContentBrowserApp extends HandlebarsApplicationMixin(ApplicationV2)
       const rec = ContentDatabase.get(this.state.selectedId);
       if (rec) ContentExporter.downloadRawContent(rec);
     });
+
+    // --- M3: Convert Selected ---
+    el.querySelector("#sf3pl-btn-convert-selected")?.addEventListener("click", () => {
+      void this.convertSelected();
+    });
+
+    // --- M3: Convert Category (category of the currently selected row) ---
+    el.querySelector("#sf3pl-btn-convert-category")?.addEventListener("click", () => {
+      void this.convertCurrentCategory();
+    });
+
+    // --- M3: Build Compendium (all records in current filter set) ---
+    el.querySelector("#sf3pl-btn-build-compendium")?.addEventListener("click", () => {
+      void this.buildCompendium();
+    });
+
+    // --- M3: Rebuild Compendium (all records, force overwrite) ---
+    el.querySelector("#sf3pl-btn-rebuild-compendium")?.addEventListener("click", () => {
+      void this.buildCompendium(true);
+    });
   }
 
   // ── Private operations ────────────────────────────────────────────────────
@@ -464,6 +486,65 @@ export class ContentBrowserApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.state.allRecords = ContentDatabase.getAll();
     ui.notifications.info("Notes and tags saved.");
     await this.render(true);
+  }
+
+  // ── M3: Conversion operations ─────────────────────────────────────────────
+
+  private async convertSelected(): Promise<void> {
+    const ids = [...this.state.selectedIds];
+    if (ids.length === 0) {
+      ui.notifications.warn("No records selected. Use the checkboxes to select records first.");
+      return;
+    }
+
+    ui.notifications.info(`Converting ${ids.length} selected record(s)…`);
+    const pipeline = new ConversionPipeline();
+    const report = await pipeline.run({ recordIds: ids });
+    this.openConversionReport(report);
+  }
+
+  private async convertCurrentCategory(): Promise<void> {
+    if (!this.state.selectedId) {
+      ui.notifications.warn("Select a record first to determine the category to convert.");
+      return;
+    }
+
+    const rec = ContentDatabase.get(this.state.selectedId);
+    if (!rec) return;
+
+    ui.notifications.info(`Converting all "${CATEGORY_LABELS[rec.category]}" records…`);
+    const pipeline = new ConversionPipeline();
+    const report = await pipeline.run({ categories: [rec.category] });
+    this.openConversionReport(report);
+  }
+
+  private async buildCompendium(forceRebuild = false): Promise<void> {
+    const records = ContentDatabase.query(this.state.filter, this.state.sort);
+    if (records.length === 0) {
+      ui.notifications.warn("No records to convert. Import content first.");
+      return;
+    }
+
+    const label = forceRebuild ? "Rebuilding" : "Building";
+    ui.notifications.info(`${label} compendium for ${records.length} record(s)…`);
+
+    const pipeline = new ConversionPipeline();
+    const report = await pipeline.run({
+      recordIds: records.map((r) => r.id),
+      overwriteExisting: forceRebuild || true,
+    });
+
+    this.openConversionReport(report);
+  }
+
+  private openConversionReport(report: PipelineReport): void {
+    import("./conversion-report.js")
+      .then(({ ConversionReportApp }) => {
+        void new ConversionReportApp(report).render(true);
+      })
+      .catch((err: unknown) => {
+        ModuleLogger.error(`[ContentBrowser] Could not open ConversionReportApp: ${String(err)}`);
+      });
   }
 }
 

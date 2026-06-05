@@ -34,6 +34,29 @@
     </div>
   </div>
 
+  {{!-- M3 Conversion Toolbar --}}
+  <div class="sf3pl-conversion-toolbar">
+    <span class="sf3pl-conversion-label"><i class="fas fa-cogs"></i> Compendium</span>
+    <div class="sf3pl-conversion-actions">
+      <button id="sf3pl-btn-convert-selected" class="sf3pl-btn sf3pl-btn-primary sf3pl-btn-sm"
+        title="Convert checked records to Foundry documents" {{#unless hasChecked}}disabled{{/unless}}>
+        <i class="fas fa-wand-magic-sparkles"></i> Convert Selected
+      </button>
+      <button id="sf3pl-btn-convert-category" class="sf3pl-btn sf3pl-btn-primary sf3pl-btn-sm"
+        title="Convert all records in the selected record's category" {{#unless hasSelection}}disabled{{/unless}}>
+        <i class="fas fa-layer-group"></i> Convert Category
+      </button>
+      <button id="sf3pl-btn-build-compendium" class="sf3pl-btn sf3pl-btn-success sf3pl-btn-sm"
+        title="Build compendium from current filtered records" {{#if isEmpty}}disabled{{/if}}>
+        <i class="fas fa-book-bookmark"></i> Build Compendium
+      </button>
+      <button id="sf3pl-btn-rebuild-compendium" class="sf3pl-btn sf3pl-btn-warning sf3pl-btn-sm"
+        title="Rebuild compendium — overwrites all existing entries" {{#if isEmpty}}disabled{{/if}}>
+        <i class="fas fa-rotate"></i> Rebuild
+      </button>
+    </div>
+  </div>
+
   <div class="sf3pl-browser-body">
 
     {{!-- Sidebar filters --}}

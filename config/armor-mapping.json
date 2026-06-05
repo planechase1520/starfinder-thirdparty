@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "3.0.0",
+  "category": "armor",
+  "description": "Field mappings from rawContent keys to SFRPG armor system data paths.",
+  "fields": [
+    { "source": "level",          "target": "level",              "type": "number",  "default": 1 },
+    { "source": "price",          "target": "price",              "type": "number",  "default": 0 },
+    { "source": "quantity",       "target": "quantity",           "type": "number",  "default": 1 },
+    { "source": "bulk",           "target": "bulk",               "type": "string",  "default": "1" },
+    { "source": "eac",            "target": "armor.eac",          "type": "number",  "default": 0 },
+    { "source": "kac",            "target": "armor.kac",          "type": "number",  "default": 0 },
+    { "source": "maxDex",         "target": "maxDexBonus",        "type": "number",  "default": 99 },
+    { "source": "maxDexBonus",    "target": "maxDexBonus",        "type": "number",  "default": 99 },
+    { "source": "acp",            "target": "armorCheckPenalty",  "type": "number",  "default": 0 },
+    { "source": "armorCheckPenalty", "target": "armorCheckPenalty", "type": "number", "default": 0 },
+    { "source": "speedAdjust",    "target": "speedAdjustment",    "type": "number",  "default": 0 },
+    { "source": "upgradeSlots",   "target": "upgradeSlots",       "type": "number",  "default": 0 },
+    { "source": "rarity",         "target": "rarity",             "type": "string",  "default": "common" },
+    { "source": "description",    "target": "description.value",  "type": "string",  "default": "" }
+  ]
+}

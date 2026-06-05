@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "3.0.0",
+  "category": "spell",
+  "description": "Field mappings from rawContent keys to SFRPG spell system data paths.",
+  "fields": [
+    { "source": "level",           "target": "level",               "type": "number",  "default": 1 },
+    { "source": "school",          "target": "school",              "type": "string",  "default": "uni" },
+    { "source": "subschool",       "target": "subschool",           "type": "string",  "default": "" },
+    { "source": "descriptors",     "target": "descriptors.value",   "type": "array",   "default": [] },
+    { "source": "castingTime",     "target": "activation.type",     "type": "string",  "default": "standard" },
+    { "source": "activation",      "target": "activation.type",     "type": "string",  "default": "standard" },
+    { "source": "range",           "target": "range.value",         "type": "string",  "default": "" },
+    { "source": "area",            "target": "area.value",          "type": "string",  "default": "" },
+    { "source": "targets",         "target": "targets.value",       "type": "string",  "default": "" },
+    { "source": "duration",        "target": "duration.value",      "type": "string",  "default": "" },
+    { "source": "save",            "target": "save.type",           "type": "string",  "default": "" },
+    { "source": "savingThrow",     "target": "save.type",           "type": "string",  "default": "" },
+    { "source": "saveDC",          "target": "save.dc",             "type": "string",  "default": "" },
+    { "source": "sr",              "target": "sr",                  "type": "boolean", "default": false },
+    { "source": "damage",          "target": "damage.parts[0][0]",  "type": "string",  "default": "" },
+    { "source": "damageFormula",   "target": "damage.parts[0][0]",  "type": "string",  "default": "" },
+    { "source": "rarity",          "target": "rarity",              "type": "string",  "default": "common" },
+    { "source": "description",     "target": "description.value",   "type": "string",  "default": "" }
+  ]
+}

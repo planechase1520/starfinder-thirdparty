@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "3.0.0",
+  "category": "weapon",
+  "description": "Field mappings from rawContent keys to SFRPG weapon system data paths. Edit this file to adapt to future SFRPG schema changes without modifying source code.",
+  "fields": [
+    { "source": "level",         "target": "level",              "type": "number",  "default": 1 },
+    { "source": "price",         "target": "price",              "type": "number",  "default": 0 },
+    { "source": "quantity",      "target": "quantity",           "type": "number",  "default": 1 },
+    { "source": "bulk",          "target": "bulk",               "type": "string",  "default": "1" },
+    { "source": "damage",        "target": "damage[0].formula",  "type": "string",  "default": "1d6" },
+    { "source": "damageFormula", "target": "damage[0].formula",  "type": "string",  "default": "1d6" },
+    { "source": "damageType",    "target": "damage[0].type",     "type": "string",  "default": "B" },
+    { "source": "critical",      "target": "critical.parts[0]",  "type": "string",  "default": "" },
+    { "source": "critEffect",    "target": "critical.parts[0]",  "type": "string",  "default": "" },
+    { "source": "range",         "target": "range.value",        "type": "number",  "default": 30 },
+    { "source": "rangeIncrement","target": "range.increment",    "type": "number",  "default": 5 },
+    { "source": "capacity",      "target": "capacity.max",       "type": "number",  "default": 20 },
+    { "source": "usage",         "target": "usage.value",        "type": "number",  "default": 1 },
+    { "source": "special",       "target": "special",            "type": "string",  "default": "" },
+    { "source": "rarity",        "target": "rarity",             "type": "string",  "default": "common" },
+    { "source": "description",   "target": "description.value",  "type": "string",  "default": "" }
+  ]
+}
