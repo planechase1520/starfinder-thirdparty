@@ -28,6 +28,7 @@ import { StarfinderAdapter } from "./adapters/starfinder/starfinder.adapter.js";
 
 import { ImportWizardApp } from "./ui/import-wizard.js";
 import { ContentBrowserApp } from "./ui/content-browser.js";
+import { ContentDatabase } from "./database/content-database.js";
 
 // ── Module constants ────────────────────────────────────────────────────────
 const MODULE_ID = "starfinder-thirdparty";
@@ -40,6 +41,7 @@ interface SF3PLApi {
   openContentBrowser: () => void;
   parsers: typeof ParserRegistry;
   adapters: typeof AdapterRegistry;
+  database: typeof ContentDatabase;
   version: string;
 }
 
@@ -86,6 +88,11 @@ Hooks.once("ready", () => {
     );
   }
 
+  // Initialize the content database from persisted Foundry settings
+  void ContentDatabase.initialize().then(() => {
+    ModuleLogger.info(`[Main] ContentDatabase ready: ${ContentDatabase.getAll().length} record(s).`);
+  });
+
   // Expose public API on the module object for macro access
   const moduleObj = game.modules.get(MODULE_ID) as unknown as Record<string, unknown>;
   const api: SF3PLApi = {
@@ -93,6 +100,7 @@ Hooks.once("ready", () => {
     openContentBrowser: () => void new ContentBrowserApp().render(true),
     parsers: ParserRegistry,
     adapters: AdapterRegistry,
+    database: ContentDatabase,
     version: MODULE_VERSION,
   };
   moduleObj["api"] = api;

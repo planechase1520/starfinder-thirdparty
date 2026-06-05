@@ -1,39 +1,73 @@
 /**
- * Import Wizard Application
+ * Import Wizard Application — Milestone 2
  *
  * A multi-step Foundry V13 ApplicationV2 window that guides the GM through
- * the full import pipeline:
- *   Step 1: Select parser type and provide source data
- *   Step 2: Configure metadata (source book, publisher, etc.)
- *   Step 3: Review validation results
- *   Step 4: Confirm and execute import
+ * the Milestone 2 content-management import pipeline:
  *
- * Uses HandlebarsApplicationMixin for template rendering.
+ *   Step 1 — Select Source  : Choose format (JSON/CSV/TXT/Paste) and provide data
+ *   Step 2 — Preview        : Inspect parsed record drafts before validating
+ *   Step 3 — Validate       : Review errors and warnings per record
+ *   Step 4 — Save to DB     : Commit valid records to the ContentDatabase
+ *
+ * Records are staged in the ContentDatabase — not yet converted to Foundry
+ * documents. That conversion is planned for a future milestone.
  */
 
-import type { ParseResult, ImportSession, ParserType, ContentType, ImportMetadata, ValidationReport } from "../types/module-types.js";
+import type { ContentCategory } from "../database/content-record.js";
+import {
+  CONTENT_CATEGORIES,
+  CATEGORY_LABELS,
+  IMPORT_METHOD_LABELS,
+} from "../database/content-record.js";
+import type { ContentDraft, BatchValidationReport } from "../validation/import-validator.js";
+import { ImportValidator } from "../validation/import-validator.js";
+import { ContentDatabase } from "../database/content-database.js";
+import { ContentExporter } from "../export/content-exporter.js";
 import { ParserRegistry } from "../parsers/parser-registry.js";
-import { AdapterRegistry } from "../adapters/adapter-registry.js";
-import { ContentValidator } from "../validation/validator.js";
-import { CompendiumManager } from "../compendium/compendium-manager.js";
-import { ErrorReporter } from "../validation/error-reporter.js";
+import type { ParserType } from "../types/module-types.js";
 import { ModuleLogger } from "../utils/logger.js";
-import { ImportReportApp } from "./import-report.js";
-import { ValidationResultsApp } from "./validation-results.js";
 
 type Step = 1 | 2 | 3 | 4;
 
+// ── Shared defaults ──────────────────────────────────────────────────────────
+
+const DEFAULT_METADATA = {
+  sourceBook: "",
+  publisher: "",
+  author: "",
+  pageNumber: 0,
+  tags: [] as string[],
+  notes: "",
+};
+
+// ── Wizard state ─────────────────────────────────────────────────────────────
+
 interface WizardState {
   step: Step;
-  parserType: ParserType;
+  /** Format chosen by the user (determines which parser to use). */
+  importMethod: "json" | "csv" | "txt" | "paste";
+  /** Raw text (file contents or pasted text). */
   rawInput: string;
+  /** Name of the uploaded file, if any. */
   fileName: string;
-  defaultContentType: ContentType;
-  metadata: Partial<ImportMetadata>;
-  parseResult: ParseResult | null;
-  validationReport: ValidationReport | null;
-  session: ImportSession | null;
+  /** Default category applied when the parsed record has no category field. */
+  defaultCategory: ContentCategory;
+  /** Global metadata applied to all records that don't provide their own. */
+  globalMetadata: typeof DEFAULT_METADATA;
+  /** Whether to overwrite existing records with the same name. */
+  overwriteDuplicates: boolean;
+
+  /** Drafts produced by the parser — one per row/entry. */
+  drafts: ContentDraft[];
+  /** Validation report for the current batch of drafts. */
+  validationReport: BatchValidationReport | null;
+  /** Number of records successfully saved in Step 4. */
+  savedCount: number;
+  /** Error messages from the save operation. */
+  saveErrors: string[];
 }
+
+// ── ApplicationV2 class ──────────────────────────────────────────────────────
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -43,7 +77,7 @@ export class ImportWizardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     title: "SF3PL: Import Wizard",
     classes: ["sf3pl-app", "sf3pl-import-wizard"],
     window: { resizable: true },
-    position: { width: 700, height: 620 },
+    position: { width: 720, height: 640 },
   };
 
   static override PARTS = {
@@ -52,34 +86,86 @@ export class ImportWizardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   private state: WizardState = {
     step: 1,
-    parserType: "json",
+    importMethod: "json",
     rawInput: "",
     fileName: "",
-    defaultContentType: "weapon",
-    metadata: {},
-    parseResult: null,
+    defaultCategory: "weapon",
+    globalMetadata: { ...DEFAULT_METADATA },
+    overwriteDuplicates: false,
+    drafts: [],
     validationReport: null,
-    session: null,
+    savedCount: 0,
+    saveErrors: [],
   };
 
-  // -------------------------------------------------------------------------
-  // ApplicationV2 lifecycle
-  // -------------------------------------------------------------------------
+  // ── Context preparation ───────────────────────────────────────────────────
 
-  override async _prepareContext(_options: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const { step, parserType, parseResult, validationReport, session } = this.state;
+  override async _prepareContext(
+    _options: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
+    const { step, importMethod, drafts, validationReport } = this.state;
 
-    const parsers = ParserRegistry.getAll().map((p) => ({
-      type: p.type,
-      label: p.displayName,
-      selected: p.type === parserType,
+    // Build category select options
+    const categoryOptions = CONTENT_CATEGORIES.map((c) => ({
+      value: c,
+      label: CATEGORY_LABELS[c],
+      selected: c === this.state.defaultCategory,
     }));
 
-    const contentTypes: ContentType[] = [
-      "weapon", "armor", "equipment", "augmentation", "feat", "spell",
-      "race", "theme", "class", "archetypeFeature", "npc", "vehicle",
-      "starship", "hazard", "journal",
-    ];
+    // Build import method options
+    const methodOptions = (["json", "csv", "txt", "paste"] as const).map((m) => ({
+      value: m,
+      label: IMPORT_METHOD_LABELS[m],
+      selected: m === importMethod,
+    }));
+
+    // Preview table — show up to 10 drafts in Step 2
+    const previewRows = drafts.slice(0, 50).map((d, i) => ({
+      index: i + 1,
+      name: String(d["name"] ?? "(no name)"),
+      category: String(d["category"] ?? this.state.defaultCategory),
+      sourceBook: String(d["sourceBook"] ?? this.state.globalMetadata.sourceBook || "—"),
+      publisher: String(d["publisher"] ?? this.state.globalMetadata.publisher || "—"),
+    }));
+
+    // Validation summary
+    let validationSummary: Record<string, unknown> | null = null;
+    if (validationReport) {
+      validationSummary = {
+        totalChecked: validationReport.totalChecked,
+        valid: validationReport.valid,
+        invalid: validationReport.invalid,
+        withWarnings: validationReport.withWarnings,
+        passRate: validationReport.totalChecked > 0
+          ? Math.round((validationReport.valid / validationReport.totalChecked) * 100)
+          : 0,
+        results: validationReport.results.map((r) => ({
+          index: r.index + 1,
+          name: r.name || "(no name)",
+          valid: r.valid,
+          issueCount: r.issues.length,
+          errorCount: r.errors.length,
+          warnCount: r.warnings.length,
+          issues: r.issues.map((iss) => ({
+            level: iss.level,
+            code: iss.code,
+            message: iss.message,
+            field: iss.field ?? "",
+            isError: iss.level === "error",
+          })),
+        })),
+      };
+    }
+
+    // Step 4 — save results
+    const saveResults =
+      step === 4
+        ? {
+            savedCount: this.state.savedCount,
+            errorCount: this.state.saveErrors.length,
+            errors: this.state.saveErrors,
+          }
+        : null;
 
     return {
       step,
@@ -87,308 +173,379 @@ export class ImportWizardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       isStep2: step === 2,
       isStep3: step === 3,
       isStep4: step === 4,
-      parsers,
-      contentTypes: contentTypes.map((t) => ({
-        value: t,
-        label: this.humanizeContentType(t),
-        selected: t === this.state.defaultContentType,
-      })),
-      metadata: this.state.metadata,
+      canGoBack: step > 1 && step < 4,
+      canGoNext: this.canAdvance(),
+      methodOptions,
+      categoryOptions,
+      globalMetadata: this.state.globalMetadata,
+      overwriteDuplicates: this.state.overwriteDuplicates,
       fileName: this.state.fileName,
-      parseResult: parseResult ? {
-        entryCount: parseResult.entries.length,
-        errorCount: parseResult.errors.length,
-        warnCount: parseResult.warnings.length,
-        preview: parseResult.entries.slice(0, 5).map((e) => ({
-          name: String(e.data["name"] ?? "(no name)"),
-          type: e.contentType,
-          ref: e.sourceReference ?? "",
-        })),
-      } : null,
-      validationReport: validationReport ? {
-        passed: validationReport.passed,
-        failed: validationReport.failed,
-        total: validationReport.totalChecked,
-        reportHtml: ErrorReporter.formatValidationReportHtml(validationReport),
-      } : null,
-      session: session ? {
-        status: session.status,
-        success: session.successCount,
-        failed: session.failureCount,
-        skipped: session.skippedCount,
-        total: session.totalEntries,
-      } : null,
-      canProceed: this.canProceedFromStep(step),
+      draftCount: drafts.length,
+      previewRows,
+      showMoreCount: drafts.length > 50 ? drafts.length - 50 : 0,
+      validationSummary,
+      saveResults,
     };
   }
 
-  override _onRender(_context: Record<string, unknown>, _options: Record<string, unknown>): void {
+  // ── Render binding ────────────────────────────────────────────────────────
+
+  override _onRender(
+    _context: Record<string, unknown>,
+    _options: Record<string, unknown>
+  ): void {
     const el = this.element;
     if (!el) return;
 
-    // Step 1 — File upload handler
+    // --- Step 1 controls ---
     const fileInput = el.querySelector<HTMLInputElement>("#sf3pl-file-input");
     if (fileInput) {
-      fileInput.addEventListener("change", (evt) => void this.handleFileUpload(evt));
+      fileInput.addEventListener("change", (evt) => void this.onFileChange(evt));
     }
 
-    // Textarea raw input
-    const textarea = el.querySelector<HTMLTextAreaElement>("#sf3pl-raw-input");
+    const textarea = el.querySelector<HTMLTextAreaElement>("#sf3pl-paste-input");
     if (textarea) {
       textarea.addEventListener("input", () => {
         this.state.rawInput = textarea.value;
       });
     }
 
-    // Parser type select
-    const parserSelect = el.querySelector<HTMLSelectElement>("#sf3pl-parser-type");
-    if (parserSelect) {
-      parserSelect.addEventListener("change", () => {
-        this.state.parserType = parserSelect.value as ParserType;
+    const methodSelect = el.querySelector<HTMLSelectElement>("#sf3pl-import-method");
+    if (methodSelect) {
+      methodSelect.addEventListener("change", () => {
+        this.state.importMethod = methodSelect.value as WizardState["importMethod"];
+        void this.render(true);
       });
     }
 
-    // Content type select
-    const contentTypeSelect = el.querySelector<HTMLSelectElement>("#sf3pl-content-type");
-    if (contentTypeSelect) {
-      contentTypeSelect.addEventListener("change", () => {
-        this.state.defaultContentType = contentTypeSelect.value as ContentType;
+    const categorySelect = el.querySelector<HTMLSelectElement>("#sf3pl-default-category");
+    if (categorySelect) {
+      categorySelect.addEventListener("change", () => {
+        this.state.defaultCategory = categorySelect.value as ContentCategory;
       });
     }
 
-    // Metadata inputs
+    // Global metadata fields
     this.bindMetadataInputs(el);
 
-    // Navigation buttons
+    const overwriteCheck = el.querySelector<HTMLInputElement>("#sf3pl-overwrite");
+    if (overwriteCheck) {
+      overwriteCheck.addEventListener("change", () => {
+        this.state.overwriteDuplicates = overwriteCheck.checked;
+      });
+    }
+
+    // --- Navigation buttons ---
     el.querySelector("#sf3pl-btn-next")?.addEventListener("click", () => void this.goNext());
     el.querySelector("#sf3pl-btn-back")?.addEventListener("click", () => void this.goBack());
-    el.querySelector("#sf3pl-btn-import")?.addEventListener("click", () => void this.executeImport());
-    el.querySelector("#sf3pl-btn-view-report")?.addEventListener("click", () => void this.showImportReport());
-    el.querySelector("#sf3pl-btn-view-validation")?.addEventListener("click", () => void this.showValidationResults());
-    el.querySelector("#sf3pl-btn-download-report")?.addEventListener("click", () => this.downloadReport());
+    el.querySelector("#sf3pl-btn-save")?.addEventListener("click", () => void this.saveToDatabase());
+
+    // --- Download buttons ---
+    el.querySelector("#sf3pl-btn-download-report")?.addEventListener("click", () => {
+      this.downloadValidationReport();
+    });
+    el.querySelector("#sf3pl-btn-download-json")?.addEventListener("click", () => {
+      this.downloadValidJson();
+    });
+
+    // --- Dismiss / start over ---
+    el.querySelector("#sf3pl-btn-start-over")?.addEventListener("click", () => {
+      this.resetWizard();
+      void this.render(true);
+    });
   }
 
-  // -------------------------------------------------------------------------
-  // Step navigation
-  // -------------------------------------------------------------------------
+  // ── Navigation logic ──────────────────────────────────────────────────────
 
   private async goNext(): Promise<void> {
-    if (!this.canProceedFromStep(this.state.step)) return;
+    if (!this.canAdvance()) return;
 
-    if (this.state.step === 1) {
-      await this.runParsing();
-    } else if (this.state.step === 2) {
-      await this.runValidation();
+    switch (this.state.step) {
+      case 1:
+        await this.parseInput();
+        if (this.state.drafts.length === 0) {
+          ui.notifications.warn("No records were parsed from the input. Check the format.");
+          return;
+        }
+        break;
+      case 2:
+        await this.validateDrafts();
+        break;
+      default:
+        break;
     }
 
-    if (this.state.step < 4) {
-      this.state.step = (this.state.step + 1) as Step;
-      await this.render(true);
-    }
+    this.state.step = (this.state.step + 1) as Step;
+    await this.render(true);
   }
 
   private async goBack(): Promise<void> {
-    if (this.state.step > 1) {
+    if (this.state.step > 1 && this.state.step < 4) {
       this.state.step = (this.state.step - 1) as Step;
       await this.render(true);
     }
   }
 
-  private canProceedFromStep(step: Step): boolean {
-    switch (step) {
-      case 1: return this.state.rawInput.trim().length > 0 || this.state.parseResult !== null;
-      case 2: return true;
+  private canAdvance(): boolean {
+    switch (this.state.step) {
+      case 1: return this.state.rawInput.trim().length > 0;
+      case 2: return this.state.drafts.length > 0;
       case 3: return this.state.validationReport !== null;
       case 4: return false;
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Pipeline steps
-  // -------------------------------------------------------------------------
+  // ── Pipeline steps ────────────────────────────────────────────────────────
 
-  private async runParsing(): Promise<void> {
-    const parser = ParserRegistry.get(this.state.parserType);
+  /**
+   * Step 1 → Step 2: Parse raw input into ContentDraft objects.
+   * Each parser returns an array of ParsedEntry objects. We flatten them
+   * into the generic ContentDraft shape that the ImportValidator expects.
+   */
+  private async parseInput(): Promise<void> {
+    const parserTypeMap: Record<WizardState["importMethod"], ParserType> = {
+      json: "json",
+      csv: "csv",
+      txt: "ocr",
+      paste: "json",
+    };
+
+    const parserType = parserTypeMap[this.state.importMethod];
+    const parser = ParserRegistry.get(parserType);
+
     if (!parser) {
-      ui.notifications.error(`No parser registered for type: ${this.state.parserType}`);
+      ui.notifications.error(`No parser registered for type: ${parserType}`);
       return;
     }
 
     try {
-      this.state.parseResult = parser.parse(this.state.rawInput, {
-        defaultContentType: this.state.defaultContentType,
-        sourceMetadata: this.state.metadata as Partial<ImportMetadata>,
+      const parseResult = parser.parse(this.state.rawInput, {
+        defaultContentType: this.state.defaultCategory,
+        sourceMetadata: {
+          sourceBook: this.state.globalMetadata.sourceBook,
+          publisher: this.state.globalMetadata.publisher,
+          author: this.state.globalMetadata.author,
+          pageNumber: this.state.globalMetadata.pageNumber,
+        },
       });
 
-      const { entries, errors } = this.state.parseResult;
-      ModuleLogger.info(`[ImportWizard] Parsed ${entries.length} entries with ${errors.length} error(s).`);
+      // Convert ParsedEntry → ContentDraft, merging global metadata as defaults
+      this.state.drafts = parseResult.entries.map((entry) => {
+        const draft: ContentDraft = {
+          name: entry.data["name"] ?? entry.data["Name"],
+          category: entry.data["category"] ?? entry.data["type"] ?? entry.contentType,
+          sourceBook: entry.metadata?.sourceBook ?? this.state.globalMetadata.sourceBook,
+          publisher: entry.metadata?.publisher ?? this.state.globalMetadata.publisher,
+          author: entry.metadata?.author ?? this.state.globalMetadata.author,
+          pageNumber:
+            entry.metadata?.pageNumber ??
+            entry.data["pageNumber"] ??
+            this.state.globalMetadata.pageNumber,
+          rawContent: { ...entry.data },
+        };
+        return draft;
+      });
 
-      if (errors.length > 0) {
-        ui.notifications.warn(`Parsing completed with ${errors.length} error(s). Review before continuing.`);
+      if (parseResult.errors.length > 0) {
+        ui.notifications.warn(
+          `Parsing completed with ${parseResult.errors.length} error(s). Some records may be incomplete.`
+        );
       }
+
+      ModuleLogger.info(
+        `[ImportWizard] Parsed ${this.state.drafts.length} draft(s) from ${parserType} input.`
+      );
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       ui.notifications.error(`Parsing failed: ${message}`);
-      ModuleLogger.error(`[ImportWizard] Parsing error: ${message}`);
+      ModuleLogger.error(`[ImportWizard] Parse error: ${message}`);
+      this.state.drafts = [];
     }
   }
 
-  private async runValidation(): Promise<void> {
-    if (!this.state.parseResult) return;
+  /**
+   * Step 2 → Step 3: Run the ImportValidator on all drafts.
+   * Duplicate detection uses the live ContentDatabase.
+   */
+  private async validateDrafts(): Promise<void> {
+    if (this.state.overwriteDuplicates) {
+      this.state.validationReport = ImportValidator.validateBatchWithOverwrite(this.state.drafts);
+    } else {
+      this.state.validationReport = ImportValidator.validateBatch(this.state.drafts);
+    }
 
-    const { entries } = this.state.parseResult;
-    this.state.validationReport = ContentValidator.validateBatch(entries);
+    const { valid, invalid } = this.state.validationReport;
+    ModuleLogger.info(`[ImportWizard] Validation: ${valid} valid, ${invalid} invalid.`);
 
-    const { passed, failed } = this.state.validationReport;
-    ModuleLogger.info(`[ImportWizard] Validation: ${passed} passed, ${failed} failed.`);
-
-    if (failed > 0) {
-      ui.notifications.warn(`${failed} entries failed validation. Review results before importing.`);
+    if (invalid > 0) {
+      ui.notifications.warn(
+        `${invalid} record(s) failed validation and will be skipped unless you go back and fix the input.`
+      );
     }
   }
 
-  private async executeImport(): Promise<void> {
-    if (!this.state.parseResult || !this.state.validationReport) return;
+  /**
+   * Step 3 → Step 4: Save valid records to ContentDatabase.
+   * Invalid records (with errors) are skipped automatically.
+   */
+  private async saveToDatabase(): Promise<void> {
+    if (!this.state.validationReport) return;
 
-    const adapter = AdapterRegistry.getForCurrentSystem();
-    if (!adapter) {
-      ui.notifications.error("No adapter registered for the current Foundry system.");
+    // Extract only drafts that passed validation
+    const validDrafts = this.state.validationReport.results
+      .filter((r) => r.valid)
+      .map((r) => this.state.drafts[r.index])
+      .filter(Boolean);
+
+    if (validDrafts.length === 0) {
+      ui.notifications.warn("No valid records to save.");
       return;
     }
 
-    // Filter to valid entries only
-    const validEntries = this.state.validationReport.results
-      .filter((r) => r.valid)
-      .map((r) => r.entry);
+    const importMethod = this.state.importMethod;
+    const globalMeta = this.state.globalMetadata;
 
-    // Transform entries
-    const documents = [];
-    for (const entry of validEntries) {
-      const result = adapter.transform(entry);
-      if (result.document) documents.push(result.document);
+    // Build ContentRecord drafts from validated ContentDrafts
+    const records = validDrafts.map((d) => ({
+      name: String(d["name"] ?? ""),
+      category: (isValidCategoryValue(d["category"])
+        ? d["category"]
+        : this.state.defaultCategory) as ContentCategory,
+      sourceBook: String(d["sourceBook"] ?? globalMeta.sourceBook ?? ""),
+      publisher: String(d["publisher"] ?? globalMeta.publisher ?? ""),
+      author: String(d["author"] ?? globalMeta.author ?? ""),
+      pageNumber: Number(d["pageNumber"] ?? globalMeta.pageNumber ?? 0),
+      tags: parseTags(d["tags"] ?? globalMeta.tags),
+      notes: String(d["notes"] ?? globalMeta.notes ?? ""),
+      rawContent: (d["rawContent"] as Record<string, unknown>) ?? {},
+      importMethod: importMethod as "json" | "csv" | "txt" | "paste",
+    }));
+
+    try {
+      const result = await ContentDatabase.importBatch(records, this.state.overwriteDuplicates);
+      this.state.savedCount = result.created + result.updated;
+      this.state.saveErrors = result.errors.map((e) => e.message);
+
+      ui.notifications.info(
+        `Saved ${result.created} new record(s)${result.updated > 0 ? `, updated ${result.updated}` : ""}` +
+        `${result.skipped > 0 ? `, skipped ${result.skipped} duplicate(s)` : ""}.`
+      );
+
+      ModuleLogger.info(
+        `[ImportWizard] DB save: ${result.created} created, ${result.updated} updated, ` +
+        `${result.skipped} skipped, ${result.errors.length} error(s).`
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.state.saveErrors = [message];
+      ui.notifications.error(`Save failed: ${message}`);
+      ModuleLogger.error(`[ImportWizard] Save error: ${message}`);
     }
-
-    // Build session
-    const session: ImportSession = {
-      id: foundry.utils.randomID(),
-      startedAt: new Date().toISOString(),
-      status: "importing",
-      sourceFile: this.state.fileName || undefined,
-      parserType: this.state.parserType,
-      systemId: game.system?.id ?? "unknown",
-      totalEntries: documents.length,
-      successCount: 0,
-      failureCount: 0,
-      skippedCount: 0,
-      errors: [],
-      warnings: [],
-      createdDocuments: [],
-    };
-
-    this.state.session = session;
-    await this.render(true);
-
-    await CompendiumManager.importDocuments(documents, session, {
-      skipDuplicates: true,
-      onProgress: (current, total, name) => {
-        ModuleLogger.info(`[ImportWizard] Importing ${current}/${total}: ${name}`);
-      },
-    });
-
-    session.completedAt = new Date().toISOString();
-    session.status = session.failureCount === 0 ? "done" : "failed";
 
     this.state.step = 4;
     await this.render(true);
-
-    ui.notifications.info(
-      `Import complete: ${session.successCount} created, ${session.failureCount} failed, ${session.skippedCount} skipped.`
-    );
   }
 
-  // -------------------------------------------------------------------------
-  // UI helpers
-  // -------------------------------------------------------------------------
+  // ── File handling ─────────────────────────────────────────────────────────
 
-  private async handleFileUpload(evt: Event): Promise<void> {
+  private async onFileChange(evt: Event): Promise<void> {
     const input = evt.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
 
     this.state.fileName = file.name;
 
-    // Auto-detect parser from extension
-    const detected = ParserRegistry.getForFile(file.name);
-    if (detected) {
-      this.state.parserType = detected.type;
-    }
+    // Auto-detect import method from file extension
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext === "json") this.state.importMethod = "json";
+    else if (ext === "csv") this.state.importMethod = "csv";
+    else if (ext === "txt") this.state.importMethod = "txt";
 
-    const text = await file.text();
-    this.state.rawInput = text;
+    this.state.rawInput = await file.text();
     await this.render(true);
   }
 
+  // ── Metadata binding ──────────────────────────────────────────────────────
+
   private bindMetadataInputs(el: HTMLElement): void {
-    const fields: (keyof ImportMetadata)[] = ["sourceBook", "publisher", "author", "pageNumber", "notes"];
-    for (const field of fields) {
-      const input = el.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="metadata.${field}"]`);
+    const textFields = ["sourceBook", "publisher", "author", "notes"] as const;
+    for (const field of textFields) {
+      const input = el.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        `[name="meta.${field}"]`
+      );
       if (input) {
         input.addEventListener("input", () => {
-          const rawVal = input.value;
-          if (field === "pageNumber") {
-            (this.state.metadata as Record<string, unknown>)[field] = parseInt(rawVal, 10) || 0;
-          } else {
-            (this.state.metadata as Record<string, unknown>)[field] = rawVal;
-          }
+          this.state.globalMetadata[field] = input.value;
         });
       }
     }
 
-    // Tags input (comma-separated)
-    const tagsInput = el.querySelector<HTMLInputElement>('[name="metadata.tags"]');
+    const pageInput = el.querySelector<HTMLInputElement>('[name="meta.pageNumber"]');
+    if (pageInput) {
+      pageInput.addEventListener("input", () => {
+        this.state.globalMetadata.pageNumber = parseInt(pageInput.value, 10) || 0;
+      });
+    }
+
+    const tagsInput = el.querySelector<HTMLInputElement>('[name="meta.tags"]');
     if (tagsInput) {
       tagsInput.addEventListener("input", () => {
-        this.state.metadata.tags = tagsInput.value.split(",").map((t) => t.trim()).filter(Boolean);
+        this.state.globalMetadata.tags = tagsInput.value
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean);
       });
     }
   }
 
-  private async showImportReport(): Promise<void> {
-    if (!this.state.session) return;
-    const reportApp = new ImportReportApp(this.state.session);
-    await reportApp.render(true);
-  }
+  // ── Download helpers ──────────────────────────────────────────────────────
 
-  private async showValidationResults(): Promise<void> {
+  private downloadValidationReport(): void {
     if (!this.state.validationReport) return;
-    const validationApp = new ValidationResultsApp(this.state.validationReport);
-    await validationApp.render(true);
+    const text = ImportValidator.formatReportText(this.state.validationReport);
+    ContentExporter.downloadText(text, "sf3pl-validation-report.txt");
   }
 
-  private downloadReport(): void {
-    if (!this.state.session) return;
-    const text = ErrorReporter.formatImportSession(this.state.session);
-    ErrorReporter.downloadReport(text, `sf3pl-import-${this.state.session.id}.txt`);
+  private downloadValidJson(): void {
+    if (!this.state.validationReport) return;
+    const validDrafts = this.state.validationReport.results
+      .filter((r) => r.valid)
+      .map((r) => this.state.drafts[r.index])
+      .filter(Boolean);
+    const json = JSON.stringify(validDrafts, null, 2);
+    ContentExporter.downloadText(json, "sf3pl-valid-records.json");
   }
 
-  private humanizeContentType(type: ContentType): string {
-    const labels: Record<ContentType, string> = {
-      weapon: "Weapon",
-      armor: "Armor",
-      equipment: "Equipment",
-      augmentation: "Augmentation",
-      feat: "Feat",
-      spell: "Spell",
-      race: "Species",
-      theme: "Theme",
-      class: "Class",
-      archetypeFeature: "Archetype",
-      npc: "NPC",
-      vehicle: "Vehicle",
-      starship: "Starship",
-      hazard: "Hazard",
-      journal: "Journal Entry",
+  // ── Reset ─────────────────────────────────────────────────────────────────
+
+  private resetWizard(): void {
+    this.state = {
+      step: 1,
+      importMethod: "json",
+      rawInput: "",
+      fileName: "",
+      defaultCategory: "weapon",
+      globalMetadata: { ...DEFAULT_METADATA },
+      overwriteDuplicates: false,
+      drafts: [],
+      validationReport: null,
+      savedCount: 0,
+      saveErrors: [],
     };
-    return labels[type] ?? type;
   }
+}
+
+// ── Module-level helpers ─────────────────────────────────────────────────────
+
+function isValidCategoryValue(value: unknown): value is ContentCategory {
+  return (
+    typeof value === "string" &&
+    (CONTENT_CATEGORIES as readonly string[]).includes(value)
+  );
+}
+
+function parseTags(value: unknown): string[] {
+  if (Array.isArray(value)) return (value as unknown[]).map(String).filter(Boolean);
+  if (typeof value === "string") return value.split(",").map((t) => t.trim()).filter(Boolean);
+  return [];
 }

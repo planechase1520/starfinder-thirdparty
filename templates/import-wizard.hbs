@@ -1,197 +1,301 @@
-{{!-- Import Wizard Template --}}
+{{!-- Import Wizard — Milestone 2
+     Steps: Source → Preview → Validate → Save to DB --}}
+
 <div class="sf3pl-wizard">
 
-  {{!-- Step Indicator --}}
+  {{!-- Step indicator --}}
   <div class="sf3pl-steps">
-    <div class="sf3pl-step {{#if isStep1}}active{{/if}} {{#unless isStep1}}{{#if (gt step 1)}}complete{{/if}}{{/unless}}">
+    <div class="sf3pl-step {{#if isStep1}}active{{else}}{{#if (gt step 1)}}done{{/if}}{{/if}}">
       <span class="sf3pl-step-num">1</span>
-      <span class="sf3pl-step-label">Source</span>
+      <span class="sf3pl-step-label">Select Source</span>
     </div>
-    <div class="sf3pl-step-line"></div>
-    <div class="sf3pl-step {{#if isStep2}}active{{/if}} {{#unless isStep2}}{{#if (gt step 2)}}complete{{/if}}{{/unless}}">
+    <div class="sf3pl-step-divider"></div>
+    <div class="sf3pl-step {{#if isStep2}}active{{else}}{{#if (gt step 2)}}done{{/if}}{{/if}}">
       <span class="sf3pl-step-num">2</span>
-      <span class="sf3pl-step-label">Metadata</span>
+      <span class="sf3pl-step-label">Preview</span>
     </div>
-    <div class="sf3pl-step-line"></div>
-    <div class="sf3pl-step {{#if isStep3}}active{{/if}} {{#unless isStep3}}{{#if (gt step 3)}}complete{{/if}}{{/unless}}">
+    <div class="sf3pl-step-divider"></div>
+    <div class="sf3pl-step {{#if isStep3}}active{{else}}{{#if (gt step 3)}}done{{/if}}{{/if}}">
       <span class="sf3pl-step-num">3</span>
       <span class="sf3pl-step-label">Validate</span>
     </div>
-    <div class="sf3pl-step-line"></div>
+    <div class="sf3pl-step-divider"></div>
     <div class="sf3pl-step {{#if isStep4}}active{{/if}}">
       <span class="sf3pl-step-num">4</span>
-      <span class="sf3pl-step-label">Import</span>
+      <span class="sf3pl-step-label">Save</span>
     </div>
   </div>
 
-  {{!-- Step 1: Source Selection --}}
-  {{#if isStep1}}
-  <div class="sf3pl-step-content">
-    <h3><i class="fas fa-file-import"></i> Select Import Source</h3>
+  <div class="sf3pl-wizard-body">
 
-    <div class="sf3pl-form-row">
-      <label>Import Format</label>
-      <select id="sf3pl-parser-type">
-        {{#each parsers}}
-        <option value="{{type}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+    {{!-- ── Step 1: Select Source ─────────────────────────────────────────── --}}
+    {{#if isStep1}}
+    <div class="sf3pl-step-content" data-step="1">
+      <h3 class="sf3pl-step-title"><i class="fas fa-file-import"></i> Select Import Source</h3>
+
+      <div class="sf3pl-form-grid">
+
+        <div class="sf3pl-field">
+          <label for="sf3pl-import-method">Import Format</label>
+          <select id="sf3pl-import-method" name="importMethod">
+            {{#each methodOptions}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+
+        <div class="sf3pl-field">
+          <label for="sf3pl-default-category">Default Content Category</label>
+          <select id="sf3pl-default-category" name="defaultCategory">
+            {{#each categoryOptions}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+          <p class="sf3pl-hint">Used when a record does not include a category field.</p>
+        </div>
+
+      </div>
+
+      <div class="sf3pl-field sf3pl-field-full">
+        <label for="sf3pl-file-input">Upload File <span class="sf3pl-optional">(JSON, CSV, or TXT)</span></label>
+        <div class="sf3pl-file-row">
+          <input type="file" id="sf3pl-file-input" accept=".json,.csv,.txt">
+          {{#if fileName}}
+          <span class="sf3pl-filename"><i class="fas fa-file"></i> {{fileName}}</span>
+          {{/if}}
+        </div>
+      </div>
+
+      <div class="sf3pl-field sf3pl-field-full">
+        <label for="sf3pl-paste-input">Or Paste Raw Data</label>
+        <textarea id="sf3pl-paste-input" name="rawInput" rows="8"
+          placeholder="Paste JSON array, CSV rows, or OCR text here..."></textarea>
+      </div>
+
+      <div class="sf3pl-section-header">Global Metadata <span class="sf3pl-hint-inline">(applied to all records that don't include their own)</span></div>
+      <div class="sf3pl-form-grid">
+
+        <div class="sf3pl-field">
+          <label>Source Book</label>
+          <input type="text" name="meta.sourceBook" value="{{globalMetadata.sourceBook}}" placeholder="e.g. Near Space">
+        </div>
+
+        <div class="sf3pl-field">
+          <label>Publisher</label>
+          <input type="text" name="meta.publisher" value="{{globalMetadata.publisher}}" placeholder="e.g. Legendary Games">
+        </div>
+
+        <div class="sf3pl-field">
+          <label>Author</label>
+          <input type="text" name="meta.author" value="{{globalMetadata.author}}" placeholder="e.g. Jason Keeley">
+        </div>
+
+        <div class="sf3pl-field">
+          <label>Page Number</label>
+          <input type="number" name="meta.pageNumber" value="{{globalMetadata.pageNumber}}" min="0" placeholder="0">
+        </div>
+
+        <div class="sf3pl-field sf3pl-field-full">
+          <label>Tags <span class="sf3pl-optional">(comma-separated)</span></label>
+          <input type="text" name="meta.tags" value="{{globalMetadata.tags}}" placeholder="e.g. homebrew, legacy, campaign-exclusive">
+        </div>
+
+        <div class="sf3pl-field sf3pl-field-full">
+          <label>Notes</label>
+          <input type="text" name="meta.notes" value="{{globalMetadata.notes}}" placeholder="Optional GM notes for this import batch">
+        </div>
+
+      </div>
+
+      <div class="sf3pl-field-inline">
+        <input type="checkbox" id="sf3pl-overwrite" {{#if overwriteDuplicates}}checked{{/if}}>
+        <label for="sf3pl-overwrite">Overwrite records with the same name if they already exist</label>
+      </div>
+
+    </div>
+    {{/if}}
+
+    {{!-- ── Step 2: Preview ──────────────────────────────────────────────── --}}
+    {{#if isStep2}}
+    <div class="sf3pl-step-content" data-step="2">
+      <h3 class="sf3pl-step-title"><i class="fas fa-table"></i> Preview Parsed Records</h3>
+
+      <div class="sf3pl-preview-stats">
+        <div class="sf3pl-stat-card">
+          <span class="sf3pl-stat-num">{{draftCount}}</span>
+          <span class="sf3pl-stat-label">Records Parsed</span>
+        </div>
+      </div>
+
+      {{#if previewRows}}
+      <div class="sf3pl-table-wrap">
+        <table class="sf3pl-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Source Book</th>
+              <th>Publisher</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each previewRows}}
+            <tr>
+              <td class="sf3pl-cell-num">{{index}}</td>
+              <td><strong>{{name}}</strong></td>
+              <td>{{category}}</td>
+              <td>{{sourceBook}}</td>
+              <td>{{publisher}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{#if showMoreCount}}
+      <p class="sf3pl-more-note"><i class="fas fa-ellipsis-h"></i> …and {{showMoreCount}} more record(s) not shown in preview.</p>
+      {{/if}}
+      {{else}}
+      <p class="sf3pl-empty-msg"><i class="fas fa-exclamation-triangle"></i> No records were parsed. Go back and check your input data.</p>
+      {{/if}}
+
+    </div>
+    {{/if}}
+
+    {{!-- ── Step 3: Validate ─────────────────────────────────────────────── --}}
+    {{#if isStep3}}
+    <div class="sf3pl-step-content" data-step="3">
+      <h3 class="sf3pl-step-title"><i class="fas fa-clipboard-check"></i> Validation Results</h3>
+
+      {{#if validationSummary}}
+      <div class="sf3pl-validation-stats">
+        <div class="sf3pl-stat-card sf3pl-stat-success">
+          <span class="sf3pl-stat-num">{{validationSummary.valid}}</span>
+          <span class="sf3pl-stat-label">Valid</span>
+        </div>
+        <div class="sf3pl-stat-card sf3pl-stat-error">
+          <span class="sf3pl-stat-num">{{validationSummary.invalid}}</span>
+          <span class="sf3pl-stat-label">Invalid</span>
+        </div>
+        <div class="sf3pl-stat-card sf3pl-stat-warn">
+          <span class="sf3pl-stat-num">{{validationSummary.withWarnings}}</span>
+          <span class="sf3pl-stat-label">Warnings</span>
+        </div>
+        <div class="sf3pl-stat-card">
+          <span class="sf3pl-stat-num">{{validationSummary.passRate}}%</span>
+          <span class="sf3pl-stat-label">Pass Rate</span>
+        </div>
+      </div>
+
+      <div class="sf3pl-validation-list">
+        {{#each validationSummary.results}}
+        <div class="sf3pl-val-row {{#if valid}}sf3pl-val-pass{{else}}sf3pl-val-fail{{/if}}">
+          <div class="sf3pl-val-header">
+            <span class="sf3pl-val-index">{{index}}</span>
+            <span class="sf3pl-val-name">{{name}}</span>
+            {{#if valid}}
+            <span class="sf3pl-badge sf3pl-badge-success"><i class="fas fa-check"></i> Valid</span>
+            {{else}}
+            <span class="sf3pl-badge sf3pl-badge-error"><i class="fas fa-times"></i> {{errorCount}} Error(s)</span>
+            {{/if}}
+            {{#if (gt warnCount 0)}}
+            <span class="sf3pl-badge sf3pl-badge-warn"><i class="fas fa-exclamation"></i> {{warnCount}} Warning(s)</span>
+            {{/if}}
+          </div>
+          {{#if issues}}
+          <ul class="sf3pl-issue-list">
+            {{#each issues}}
+            <li class="sf3pl-issue sf3pl-issue-{{level}}">
+              <i class="fas {{#if isError}}fa-times-circle{{else}}fa-exclamation-circle{{/if}}"></i>
+              <span class="sf3pl-issue-code">{{code}}</span>
+              {{message}}
+              {{#if field}}<span class="sf3pl-issue-field">(field: {{field}})</span>{{/if}}
+            </li>
+            {{/each}}
+          </ul>
+          {{/if}}
+        </div>
         {{/each}}
-      </select>
-    </div>
-
-    <div class="sf3pl-form-row">
-      <label>Default Content Type</label>
-      <select id="sf3pl-content-type">
-        {{#each contentTypes}}
-        <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-        {{/each}}
-      </select>
-      <p class="sf3pl-hint">Used when the source data does not specify a content type per entry.</p>
-    </div>
-
-    <div class="sf3pl-form-row">
-      <label>Upload File</label>
-      <input type="file" id="sf3pl-file-input" accept=".csv,.json,.txt" />
-      {{#if fileName}}<span class="sf3pl-filename">{{fileName}}</span>{{/if}}
-    </div>
-
-    <div class="sf3pl-form-row">
-      <label>Or Paste Raw Data</label>
-      <textarea id="sf3pl-raw-input" rows="10" placeholder="Paste CSV, JSON, or OCR text here..."></textarea>
-    </div>
-  </div>
-  {{/if}}
-
-  {{!-- Step 2: Metadata --}}
-  {{#if isStep2}}
-  <div class="sf3pl-step-content">
-    <h3><i class="fas fa-tags"></i> Source Metadata</h3>
-    <p class="sf3pl-hint">This metadata will be attached to all imported documents from this batch.</p>
-
-    <div class="sf3pl-form-grid">
-      <div class="sf3pl-form-row">
-        <label>Source Book</label>
-        <input type="text" name="metadata.sourceBook" value="{{metadata.sourceBook}}" placeholder="e.g. Near Space" />
       </div>
-      <div class="sf3pl-form-row">
-        <label>Publisher</label>
-        <input type="text" name="metadata.publisher" value="{{metadata.publisher}}" placeholder="e.g. Paizo" />
-      </div>
-      <div class="sf3pl-form-row">
-        <label>Author</label>
-        <input type="text" name="metadata.author" value="{{metadata.author}}" placeholder="e.g. Crystal Frasier" />
-      </div>
-      <div class="sf3pl-form-row">
-        <label>Page Number</label>
-        <input type="number" name="metadata.pageNumber" value="{{metadata.pageNumber}}" min="0" />
-      </div>
-      <div class="sf3pl-form-row sf3pl-full-width">
-        <label>Tags <span class="sf3pl-hint">(comma-separated)</span></label>
-        <input type="text" name="metadata.tags" value="{{metadata.tags}}" placeholder="third-party, adventure path, alien archive" />
-      </div>
-      <div class="sf3pl-form-row sf3pl-full-width">
-        <label>Notes</label>
-        <textarea name="metadata.notes" rows="3" placeholder="Any notes about this content batch...">{{metadata.notes}}</textarea>
-      </div>
-    </div>
 
-    {{#if parseResult}}
-    <div class="sf3pl-parse-summary">
-      <i class="fas fa-circle-check sf3pl-success-icon"></i>
-      Parsed <strong>{{parseResult.entryCount}}</strong> entries
-      {{#if parseResult.errorCount}}<span class="sf3pl-error-badge">{{parseResult.errorCount}} errors</span>{{/if}}
-      {{#if parseResult.warnCount}}<span class="sf3pl-warn-badge">{{parseResult.warnCount}} warnings</span>{{/if}}
-
-      {{#if parseResult.preview}}
-      <details class="sf3pl-preview">
-        <summary>Preview first 5 entries</summary>
-        <ul>
-          {{#each parseResult.preview}}
-          <li><strong>{{name}}</strong> <em>({{type}})</em> <span class="sf3pl-ref">{{ref}}</span></li>
-          {{/each}}
-        </ul>
-      </details>
+      <div class="sf3pl-val-actions">
+        <button id="sf3pl-btn-download-report" class="sf3pl-btn sf3pl-btn-secondary">
+          <i class="fas fa-download"></i> Download Report
+        </button>
+        <button id="sf3pl-btn-download-json" class="sf3pl-btn sf3pl-btn-secondary">
+          <i class="fas fa-file-code"></i> Download Valid JSON
+        </button>
+      </div>
       {{/if}}
     </div>
     {{/if}}
-  </div>
-  {{/if}}
 
-  {{!-- Step 3: Validation Results --}}
-  {{#if isStep3}}
-  <div class="sf3pl-step-content">
-    <h3><i class="fas fa-clipboard-check"></i> Validation Results</h3>
+    {{!-- ── Step 4: Save Results ─────────────────────────────────────────── --}}
+    {{#if isStep4}}
+    <div class="sf3pl-step-content" data-step="4">
+      <h3 class="sf3pl-step-title"><i class="fas fa-database"></i> Save to Database</h3>
 
-    {{#if validationReport}}
-    <div class="sf3pl-validation-summary">
-      <div class="sf3pl-stat"><span class="sf3pl-num">{{validationReport.total}}</span><span class="sf3pl-label">Checked</span></div>
-      <div class="sf3pl-stat sf3pl-success"><span class="sf3pl-num">{{validationReport.passed}}</span><span class="sf3pl-label">Passed</span></div>
-      <div class="sf3pl-stat {{#if validationReport.failed}}sf3pl-failure{{/if}}"><span class="sf3pl-num">{{validationReport.failed}}</span><span class="sf3pl-label">Failed</span></div>
+      {{#if saveResults}}
+      <div class="sf3pl-save-stats">
+        <div class="sf3pl-stat-card sf3pl-stat-success">
+          <span class="sf3pl-stat-num">{{saveResults.savedCount}}</span>
+          <span class="sf3pl-stat-label">Records Saved</span>
+        </div>
+        {{#if (gt saveResults.errorCount 0)}}
+        <div class="sf3pl-stat-card sf3pl-stat-error">
+          <span class="sf3pl-stat-num">{{saveResults.errorCount}}</span>
+          <span class="sf3pl-stat-label">Errors</span>
+        </div>
+        {{/if}}
+      </div>
+
+      {{#if saveResults.errors}}
+      <div class="sf3pl-error-list">
+        <h4>Save Errors</h4>
+        {{#each saveResults.errors}}
+        <div class="sf3pl-error-item"><i class="fas fa-exclamation-circle"></i> {{this}}</div>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      <p class="sf3pl-success-msg">
+        <i class="fas fa-check-circle"></i>
+        Records are now available in the <strong>Content Browser</strong>.
+        Open it from the toolbar or <code>game.modules.get('starfinder-thirdparty').api.openContentBrowser()</code>.
+      </p>
+      {{/if}}
+
+      <div class="sf3pl-step4-actions">
+        <button id="sf3pl-btn-start-over" class="sf3pl-btn sf3pl-btn-primary">
+          <i class="fas fa-redo"></i> Import More Content
+        </button>
+      </div>
     </div>
-
-    <div class="sf3pl-validation-html">
-      {{{validationReport.reportHtml}}}
-    </div>
-
-    <div class="sf3pl-report-actions">
-      <button id="sf3pl-btn-view-validation" class="sf3pl-btn sf3pl-btn-secondary">
-        <i class="fas fa-list"></i> View Full Results
-      </button>
-    </div>
-
-    {{#if validationReport.failed}}
-    <p class="sf3pl-warn-text">
-      <i class="fas fa-triangle-exclamation"></i>
-      <strong>{{validationReport.failed}}</strong> entries failed validation and will be skipped during import.
-    </p>
-    {{/if}}
-    {{/if}}
-  </div>
-  {{/if}}
-
-  {{!-- Step 4: Import Results --}}
-  {{#if isStep4}}
-  <div class="sf3pl-step-content">
-    <h3><i class="fas fa-check-circle"></i> Import Complete</h3>
-
-    {{#if session}}
-    <div class="sf3pl-import-summary">
-      <div class="sf3pl-stat sf3pl-success"><span class="sf3pl-num">{{session.success}}</span><span class="sf3pl-label">Created</span></div>
-      <div class="sf3pl-stat {{#if session.failed}}sf3pl-failure{{/if}}"><span class="sf3pl-num">{{session.failed}}</span><span class="sf3pl-label">Failed</span></div>
-      <div class="sf3pl-stat"><span class="sf3pl-num">{{session.skipped}}</span><span class="sf3pl-label">Skipped</span></div>
-    </div>
-    <p class="sf3pl-hint">Documents have been added to their respective SF3PL compendium packs.</p>
     {{/if}}
 
-    <div class="sf3pl-report-actions">
-      <button id="sf3pl-btn-view-report" class="sf3pl-btn sf3pl-btn-secondary">
-        <i class="fas fa-file-lines"></i> View Full Report
-      </button>
-      <button id="sf3pl-btn-download-report" class="sf3pl-btn sf3pl-btn-secondary">
-        <i class="fas fa-download"></i> Download Report
-      </button>
-    </div>
-  </div>
-  {{/if}}
+  </div>{{!-- /.sf3pl-wizard-body --}}
 
-  {{!-- Footer Navigation --}}
+  {{!-- Footer navigation --}}
   <div class="sf3pl-wizard-footer">
-    {{#unless isStep1}}
+    {{#if canGoBack}}
     <button id="sf3pl-btn-back" class="sf3pl-btn sf3pl-btn-secondary">
       <i class="fas fa-arrow-left"></i> Back
     </button>
-    {{/unless}}
+    {{/if}}
+
+    <div class="sf3pl-footer-spacer"></div>
 
     {{#if isStep3}}
-    <button id="sf3pl-btn-import" class="sf3pl-btn sf3pl-btn-primary">
-      <i class="fas fa-file-import"></i> Import Valid Entries
+    <button id="sf3pl-btn-save" class="sf3pl-btn sf3pl-btn-primary" {{#unless canGoNext}}disabled{{/unless}}>
+      <i class="fas fa-save"></i> Save Valid Records to Database
     </button>
-    {{else}}
+    {{else if (gt step 0)}}
     {{#unless isStep4}}
-    <button id="sf3pl-btn-next" class="sf3pl-btn sf3pl-btn-primary" {{#unless canProceed}}disabled{{/unless}}>
+    <button id="sf3pl-btn-next" class="sf3pl-btn sf3pl-btn-primary" {{#unless canGoNext}}disabled{{/unless}}>
       Next <i class="fas fa-arrow-right"></i>
     </button>
     {{/unless}}
     {{/if}}
   </div>
 
-</div>
+</div>{{!-- /.sf3pl-wizard --}}

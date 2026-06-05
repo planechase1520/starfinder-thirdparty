@@ -1,168 +1,270 @@
-{{!-- Content Browser Template --}}
+{{!-- Content Browser — Milestone 2
+     Database-backed browser with search, filter, sort, detail panel, and export --}}
+
 <div class="sf3pl-browser">
 
-  {{!-- Left Panel: Filters --}}
-  <div class="sf3pl-browser-sidebar">
-    <div class="sf3pl-sidebar-header">
-      <h4><i class="fas fa-filter"></i> Filters</h4>
-      <button id="sf3pl-btn-clear-filter" class="sf3pl-btn-icon" title="Clear all filters">
-        <i class="fas fa-rotate-left"></i>
+  {{!-- Top toolbar --}}
+  <div class="sf3pl-browser-toolbar">
+    <div class="sf3pl-search-wrap">
+      <i class="fas fa-search sf3pl-search-icon"></i>
+      <input type="text" id="sf3pl-search" class="sf3pl-search-input"
+        value="{{filter.searchText}}" placeholder="Search by name, publisher, source book, tags…">
+    </div>
+
+    <div class="sf3pl-toolbar-actions">
+      {{#if hasChecked}}
+      <span class="sf3pl-checked-badge">{{checkedCount}} selected</span>
+      <button id="sf3pl-btn-bulk-delete" class="sf3pl-btn sf3pl-btn-danger sf3pl-btn-sm">
+        <i class="fas fa-trash"></i> Delete Selected
       </button>
-    </div>
+      {{/if}}
 
-    {{!-- Text Search --}}
-    <div class="sf3pl-filter-group">
-      <label><i class="fas fa-magnifying-glass"></i> Search</label>
-      <input type="text" id="sf3pl-search" value="{{filter.searchText}}" placeholder="Search by name..." />
-    </div>
-
-    {{!-- Content Type --}}
-    <div class="sf3pl-filter-group">
-      <label>Content Type</label>
-      <div class="sf3pl-checkbox-list">
-        {{#each filterOptions.contentTypes}}
-        <label class="sf3pl-checkbox-row">
-          <input type="checkbox" class="sf3pl-filter-type" value="{{value}}"
-            {{#if (includes ../filter.activeContentTypes value)}}checked{{/if}} />
-          {{label}}
-        </label>
-        {{/each}}
+      <div class="sf3pl-export-group">
+        <button id="sf3pl-btn-export-json" class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" title="Export to JSON">
+          <i class="fas fa-file-code"></i> JSON
+        </button>
+        <button id="sf3pl-btn-export-csv" class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" title="Export to CSV">
+          <i class="fas fa-file-csv"></i> CSV
+        </button>
       </div>
-    </div>
 
-    {{!-- Publisher --}}
-    <div class="sf3pl-filter-group">
-      <label>Publisher</label>
-      <select id="sf3pl-filter-publisher">
-        <option value="">All Publishers</option>
-        {{#each filterOptions.publishers}}
-        <option value="{{value}}" {{#if (eq value ../filter.activePublishers.[0])}}selected{{/if}}>{{label}}</option>
-        {{/each}}
-      </select>
-    </div>
-
-    {{!-- Source Book --}}
-    <div class="sf3pl-filter-group">
-      <label>Source Book</label>
-      <select id="sf3pl-filter-sourcebook">
-        <option value="">All Source Books</option>
-        {{#each filterOptions.sourceBooks}}
-        <option value="{{value}}" {{#if (eq value ../filter.activeSourceBooks.[0])}}selected{{/if}}>{{label}}</option>
-        {{/each}}
-      </select>
+      <button id="sf3pl-btn-refresh" class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" title="Reload from database">
+        <i class="fas fa-sync-alt"></i>
+      </button>
     </div>
   </div>
 
-  {{!-- Main Panel --}}
-  <div class="sf3pl-browser-main">
+  <div class="sf3pl-browser-body">
 
-    {{!-- Toolbar --}}
-    <div class="sf3pl-browser-toolbar">
-      <span class="sf3pl-entry-count">
-        Showing <strong>{{filteredCount}}</strong> of <strong>{{totalCount}}</strong> entries
-      </span>
-      <button id="sf3pl-btn-refresh" class="sf3pl-btn sf3pl-btn-icon" title="Refresh from packs">
-        <i class="fas fa-arrows-rotate"></i>
-      </button>
-    </div>
+    {{!-- Sidebar filters --}}
+    <aside class="sf3pl-filter-sidebar">
 
-    {{!-- Entry Table --}}
-    {{#if loaded}}
-    <div class="sf3pl-entry-table">
-      <div class="sf3pl-entry-table-header">
-        <span class="sf3pl-col-icon"></span>
-        <span class="sf3pl-col-name" data-sort-field="name" style="cursor:pointer">
-          Name {{#if (eq sort.field "name")}}<i class="fas fa-sort-{{#if sort.ascending}}up{{else}}down{{/if}}"></i>{{/if}}
-        </span>
-        <span class="sf3pl-col-type" data-sort-field="contentType" style="cursor:pointer">
-          Type {{#if (eq sort.field "contentType")}}<i class="fas fa-sort-{{#if sort.ascending}}up{{else}}down{{/if}}"></i>{{/if}}
-        </span>
-        <span class="sf3pl-col-source" data-sort-field="sourceBook" style="cursor:pointer">
-          Source {{#if (eq sort.field "sourceBook")}}<i class="fas fa-sort-{{#if sort.ascending}}up{{else}}down{{/if}}"></i>{{/if}}
-        </span>
-        <span class="sf3pl-col-publisher" data-sort-field="publisher" style="cursor:pointer">
-          Publisher {{#if (eq sort.field "publisher")}}<i class="fas fa-sort-{{#if sort.ascending}}up{{else}}down{{/if}}"></i>{{/if}}
-        </span>
+      <div class="sf3pl-filter-section">
+        <div class="sf3pl-filter-heading">
+          Category
+          <button id="sf3pl-btn-clear-filter" class="sf3pl-btn-link">Clear All</button>
+        </div>
+        {{#if categoryFilterOptions}}
+        <ul class="sf3pl-category-list">
+          {{#each categoryFilterOptions}}
+          <li>
+            <label class="sf3pl-category-item {{#if active}}active{{/if}}">
+              <input type="checkbox" class="sf3pl-category-filter"
+                value="{{value}}" {{#if active}}checked{{/if}}>
+              <span class="sf3pl-category-label">{{label}}</span>
+              <span class="sf3pl-category-count">{{count}}</span>
+            </label>
+          </li>
+          {{/each}}
+        </ul>
+        {{else}}
+        <p class="sf3pl-filter-empty">No content imported yet.</p>
+        {{/if}}
       </div>
 
-      <div class="sf3pl-entry-rows">
-        {{#each entries}}
-        <div class="sf3pl-entry-row {{#if isSelected}}sf3pl-selected{{/if}}" data-entry-id="{{id}}">
-          <span class="sf3pl-col-icon"><i class="fas {{typeIcon}}"></i></span>
-          <span class="sf3pl-col-name">{{name}}</span>
-          <span class="sf3pl-col-type"><span class="sf3pl-badge">{{typeLabel}}</span></span>
-          <span class="sf3pl-col-source">{{metadata.sourceBook}}</span>
-          <span class="sf3pl-col-publisher">{{metadata.publisher}}</span>
+      {{#if publisherOptions}}
+      <div class="sf3pl-filter-section">
+        <div class="sf3pl-filter-heading">Publisher</div>
+        <select id="sf3pl-filter-publisher" class="sf3pl-filter-select">
+          <option value="">— All Publishers —</option>
+          {{#each publisherOptions}}
+          <option value="{{value}}" {{#if (eq value ../filter.publisher)}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      {{/if}}
+
+      {{#if sourceBookOptions}}
+      <div class="sf3pl-filter-section">
+        <div class="sf3pl-filter-heading">Source Book</div>
+        <select id="sf3pl-filter-sourcebook" class="sf3pl-filter-select">
+          <option value="">— All Books —</option>
+          {{#each sourceBookOptions}}
+          <option value="{{value}}" {{#if (eq value ../filter.sourceBook)}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      {{/if}}
+
+      {{#if tagOptions}}
+      <div class="sf3pl-filter-section">
+        <div class="sf3pl-filter-heading">Tag</div>
+        <select id="sf3pl-filter-tag" class="sf3pl-filter-select">
+          <option value="">— All Tags —</option>
+          {{#each tagOptions}}
+          <option value="{{value}}" {{#if (eq value ../filter.tag)}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      {{/if}}
+
+    </aside>
+
+    {{!-- Main content area --}}
+    <div class="sf3pl-browser-main">
+
+      {{#if isEmpty}}
+      <div class="sf3pl-empty-state">
+        <i class="fas fa-inbox sf3pl-empty-icon"></i>
+        <h3>No Content Yet</h3>
+        <p>Use the <strong>Import Wizard</strong> to import your first records.</p>
+        <p class="sf3pl-hint">Toolbar → <i class="fas fa-file-import"></i> or <code>game.modules.get('starfinder-thirdparty').api.openImportWizard()</code></p>
+      </div>
+      {{else}}
+
+      <div class="sf3pl-table-header">
+        <span class="sf3pl-result-count">{{filteredCount}} of {{totalCount}} records</span>
+      </div>
+
+      {{!-- Record table --}}
+      <div class="sf3pl-table-wrap">
+        <table class="sf3pl-table sf3pl-browser-table">
+          <thead>
+            <tr>
+              <th class="sf3pl-col-check">
+                <input type="checkbox" id="sf3pl-select-all" title="Select all visible">
+              </th>
+              <th class="sf3pl-col-icon"></th>
+              <th class="sf3pl-sortable" data-sort="name">
+                Name
+                {{#if sort.isAscName}}<i class="fas fa-sort-up"></i>{{else if sort.isDescName}}<i class="fas fa-sort-down"></i>{{else}}<i class="fas fa-sort sf3pl-sort-faint"></i>{{/if}}
+              </th>
+              <th class="sf3pl-sortable" data-sort="category">Category</th>
+              <th class="sf3pl-sortable" data-sort="sourceBook">Source Book</th>
+              <th class="sf3pl-sortable" data-sort="publisher">Publisher</th>
+              <th>Level</th>
+              <th>Tags</th>
+              <th>Imported</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each rows}}
+            <tr class="sf3pl-row {{#if isSelected}}sf3pl-row-selected{{/if}}" data-id="{{id}}">
+              <td class="sf3pl-col-check">
+                <input type="checkbox" class="sf3pl-row-check" data-id="{{id}}" {{#if isChecked}}checked{{/if}}>
+              </td>
+              <td class="sf3pl-col-icon">
+                <i class="fas {{categoryIcon}} sf3pl-type-icon" title="{{categoryLabel}}"></i>
+              </td>
+              <td class="sf3pl-col-name"><strong>{{name}}</strong></td>
+              <td class="sf3pl-col-cat">{{categoryLabel}}</td>
+              <td class="sf3pl-col-book">{{sourceBook}}</td>
+              <td class="sf3pl-col-pub">{{publisher}}</td>
+              <td class="sf3pl-col-level">{{level}}</td>
+              <td class="sf3pl-col-tags">{{#if tags}}<span class="sf3pl-tags-cell">{{tags}}</span>{{else}}—{{/if}}</td>
+              <td class="sf3pl-col-date">{{importedDate}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+
+      {{#unless rows}}
+      <p class="sf3pl-empty-msg"><i class="fas fa-filter"></i> No records match the current filters.</p>
+      {{/unless}}
+
+      {{/if}}{{!-- /.isEmpty else --}}
+    </div>{{!-- /.sf3pl-browser-main --}}
+
+    {{!-- Detail panel --}}
+    {{#if hasSelection}}
+    <aside class="sf3pl-detail-panel">
+      {{#if detailPanel}}
+      <div class="sf3pl-detail-header">
+        <i class="fas {{detailPanel.categoryIcon}} sf3pl-detail-icon"></i>
+        <div>
+          <h3 class="sf3pl-detail-name">{{detailPanel.name}}</h3>
+          <span class="sf3pl-detail-category">{{detailPanel.categoryLabel}}</span>
+        </div>
+      </div>
+
+      <div class="sf3pl-detail-fields">
+
+        <div class="sf3pl-detail-field">
+          <span class="sf3pl-detail-label">Source Book</span>
+          <span class="sf3pl-detail-value">{{detailPanel.sourceBook}}</span>
+        </div>
+
+        <div class="sf3pl-detail-field">
+          <span class="sf3pl-detail-label">Publisher</span>
+          <span class="sf3pl-detail-value">{{detailPanel.publisher}}</span>
+        </div>
+
+        <div class="sf3pl-detail-field">
+          <span class="sf3pl-detail-label">Author</span>
+          <span class="sf3pl-detail-value">{{detailPanel.author}}</span>
+        </div>
+
+        <div class="sf3pl-detail-field">
+          <span class="sf3pl-detail-label">Page</span>
+          <span class="sf3pl-detail-value">{{detailPanel.pageNumber}}</span>
+        </div>
+
+        <div class="sf3pl-detail-field">
+          <span class="sf3pl-detail-label">Imported</span>
+          <span class="sf3pl-detail-value">{{detailPanel.importedDate}} via {{detailPanel.importMethod}}</span>
+        </div>
+
+        {{!-- Tags --}}
+        {{#if detailPanel.editingNotes}}
+        <div class="sf3pl-detail-field sf3pl-field-full">
+          <span class="sf3pl-detail-label">Tags <span class="sf3pl-optional">(comma-separated)</span></span>
+          <input type="text" id="sf3pl-tags-editor" value="{{detailPanel.tagsBuffer}}" class="sf3pl-tags-input">
         </div>
         {{else}}
-        <div class="sf3pl-empty-state">
-          <i class="fas fa-box-open"></i>
-          <p>No entries found. Import content using the <strong>Import Wizard</strong>.</p>
+        <div class="sf3pl-detail-field sf3pl-field-full">
+          <span class="sf3pl-detail-label">Tags</span>
+          <span class="sf3pl-detail-value">{{detailPanel.tags}}</span>
         </div>
-        {{/each}}
-      </div>
-    </div>
-    {{else}}
-    <div class="sf3pl-loading">
-      <i class="fas fa-spinner fa-spin"></i> Loading content...
-    </div>
-    {{/if}}
-  </div>
+        {{/if}}
 
-  {{!-- Right Panel: Detail View --}}
-  {{#if selectedEntry}}
-  <div class="sf3pl-browser-detail">
-    <div class="sf3pl-detail-header">
-      <i class="fas {{selectedEntry.typeIcon}} sf3pl-detail-icon"></i>
-      <h4>{{selectedEntry.name}}</h4>
-      <span class="sf3pl-badge">{{selectedEntry.typeLabel}}</span>
-    </div>
+        {{!-- Notes --}}
+        {{#if detailPanel.editingNotes}}
+        <div class="sf3pl-detail-field sf3pl-field-full">
+          <span class="sf3pl-detail-label">Notes</span>
+          <textarea id="sf3pl-notes-editor" class="sf3pl-notes-editor" rows="4">{{detailPanel.notesBuffer}}</textarea>
+        </div>
+        {{else}}
+        <div class="sf3pl-detail-field sf3pl-field-full">
+          <span class="sf3pl-detail-label">Notes</span>
+          <span class="sf3pl-detail-value sf3pl-notes-display">{{#if detailPanel.notes}}{{detailPanel.notes}}{{else}}<em>No notes</em>{{/if}}</span>
+        </div>
+        {{/if}}
 
-    <div class="sf3pl-detail-fields">
-      <div class="sf3pl-detail-row">
-        <span class="sf3pl-detail-label">Source Book</span>
-        <span class="sf3pl-detail-value">{{selectedEntry.metadata.sourceBook}}</span>
       </div>
-      <div class="sf3pl-detail-row">
-        <span class="sf3pl-detail-label">Publisher</span>
-        <span class="sf3pl-detail-value">{{selectedEntry.metadata.publisher}}</span>
-      </div>
-      <div class="sf3pl-detail-row">
-        <span class="sf3pl-detail-label">Author</span>
-        <span class="sf3pl-detail-value">{{selectedEntry.metadata.author}}</span>
-      </div>
-      <div class="sf3pl-detail-row">
-        <span class="sf3pl-detail-label">Page</span>
-        <span class="sf3pl-detail-value">{{selectedEntry.metadata.pageNumber}}</span>
-      </div>
-      <div class="sf3pl-detail-row">
-        <span class="sf3pl-detail-label">Imported</span>
-        <span class="sf3pl-detail-value">{{selectedEntry.importDate}}</span>
-      </div>
-      <div class="sf3pl-detail-row">
-        <span class="sf3pl-detail-label">Pack</span>
-        <span class="sf3pl-detail-value">{{selectedEntry.packName}}</span>
-      </div>
-      {{#if selectedEntry.tagsDisplay}}
-      <div class="sf3pl-detail-row sf3pl-detail-tags">
-        <span class="sf3pl-detail-label">Tags</span>
-        <span class="sf3pl-detail-value">{{selectedEntry.tagsDisplay}}</span>
-      </div>
-      {{/if}}
-      {{#if selectedEntry.metadata.notes}}
-      <div class="sf3pl-detail-row">
-        <span class="sf3pl-detail-label">Notes</span>
-        <span class="sf3pl-detail-value">{{selectedEntry.metadata.notes}}</span>
-      </div>
-      {{/if}}
-    </div>
 
-    <div class="sf3pl-detail-actions">
-      <button id="sf3pl-btn-open-pack" class="sf3pl-btn sf3pl-btn-primary">
-        <i class="fas fa-book"></i> Open Compendium
-      </button>
-    </div>
-  </div>
-  {{/if}}
+      {{!-- Raw content collapsible --}}
+      <details class="sf3pl-raw-content">
+        <summary><i class="fas fa-code"></i> Raw Content</summary>
+        <pre class="sf3pl-json-view">{{detailPanel.rawContentJson}}</pre>
+      </details>
 
-</div>
+      {{!-- Detail actions --}}
+      <div class="sf3pl-detail-actions">
+        {{#if detailPanel.editingNotes}}
+        <button id="sf3pl-btn-save-notes" class="sf3pl-btn sf3pl-btn-primary sf3pl-btn-sm">
+          <i class="fas fa-save"></i> Save
+        </button>
+        <button id="sf3pl-btn-cancel-notes" class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm">
+          Cancel
+        </button>
+        {{else}}
+        <button id="sf3pl-btn-edit-notes" class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm">
+          <i class="fas fa-edit"></i> Edit Notes &amp; Tags
+        </button>
+        <button id="sf3pl-btn-download-raw" class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm">
+          <i class="fas fa-download"></i> Raw JSON
+        </button>
+        <button id="sf3pl-btn-delete" class="sf3pl-btn sf3pl-btn-danger sf3pl-btn-sm">
+          <i class="fas fa-trash"></i> Delete
+        </button>
+        {{/if}}
+      </div>
+
+      {{/if}}{{!-- /.detailPanel --}}
+    </aside>
+    {{/if}}{{!-- /.hasSelection --}}
+
+  </div>{{!-- /.sf3pl-browser-body --}}
+
+</div>{{!-- /.sf3pl-browser --}}

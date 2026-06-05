@@ -15,6 +15,7 @@ export const SETTINGS = {
   SKIP_DUPLICATES: "skipDuplicates",
   DEFAULT_PUBLISHER: "defaultPublisher",
   SCHEMA_VERSION: "schemaVersion",
+  CONTENT_DATABASE: "contentDatabase",
 } as const;
 
 export type SettingKey = (typeof SETTINGS)[keyof typeof SETTINGS];
@@ -58,6 +59,16 @@ export function registerSettings(): void {
     config: false,
     type: String,
     default: "1.0.0",
+  });
+
+  // Hidden world setting that persists the entire content database as a JSON array.
+  // Accessed by ContentDatabase.initialize() / persist().
+  game.settings.register(MODULE_ID, SETTINGS.CONTENT_DATABASE, {
+    name: "Content Database",
+    scope: "world",
+    config: false,
+    type: Object,
+    default: { schemaVersion: "2.0.0", records: [] },
   });
 
   ModuleLogger.info("[Settings] All settings registered.");
