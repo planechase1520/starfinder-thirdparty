@@ -166,8 +166,8 @@
       "schemaVersion": "1.0.0"
     }
   },
-  "url": "",
-  "manifest": "",
-  "download": "",
+  "url": "https://github.com/planechase1520/starfinder-thirdparty",
+  "manifest": "https://raw.githubusercontent.com/planechase1520/starfinder-thirdparty/main/module.json",
+  "download": "https://github.com/planechase1520/starfinder-thirdparty/archive/refs/heads/main.zip",
   "license": "MIT"
 }
