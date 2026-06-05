@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "rollup -c rollup.config.mjs",
+    "watch": "rollup -c rollup.config.mjs --watch",
     "build:watch": "rollup -c rollup.config.mjs --watch",
+    "link": "node tools/link.mjs",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "typecheck": "tsc --noEmit",
