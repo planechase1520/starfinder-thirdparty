@@ -176,7 +176,8 @@ Hooks.once("ready", () => {
 });
 
 // ── Scene control buttons ────────────────────────────────────────────────────
-Hooks.on("getSceneControlButtons", (controls: unknown[]) => {
+Hooks.on("getSceneControlButtons", (...args: unknown[]) => {
+  const controls = args[0] as unknown[];
   if (!game.user?.isGM) return;
 
   (controls as Array<{ name: string; tools: unknown[] }>).push({

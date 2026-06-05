@@ -171,7 +171,7 @@ export class PdfProcessor {
                       textLength: ocrText.length,
                       wasOcr: true,
                       ocrConfidence: result.confidence,
-                      wordCount: ocrText.split(/\s+/).filter((w) => w.length > 0).length,
+                      wordCount: ocrText.split(/\s+/).filter((w: string) => w.length > 0).length,
                     };
                   }
                   ocrConfidenceSum += result.confidence;
@@ -311,7 +311,7 @@ export class PdfProcessor {
           const refined = await aiEngine.refineBatch(
             allRecords,
             sourceBook,
-            (done, total) => {
+            (done: number, total: number) => {
               checkAbort(abortSignal);
               emit(onProgress, {
                 phase: "ai-refining",

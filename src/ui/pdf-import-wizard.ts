@@ -287,7 +287,7 @@ export class PdfImportWizardApp extends HandlebarsApplicationMixin(ApplicationV2
         enableOcr: this.getOcrEnabled(),
         enableAi: !!aiApiKey,
         aiApiKey,
-        onProgress: (progress) => {
+        onProgress: (_progress) => {
           void this.render();
         },
       });

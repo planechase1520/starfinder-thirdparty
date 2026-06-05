@@ -1,9 +1,9 @@
-import { ModuleLogger } from "../utils/logger.js";
 import type {
   QueueItem,
   ImportHistoryEntry,
   ProcessingProgress,
 } from "./pdf-types.js";
+import { ModuleLogger } from "../utils/logger.js";
 
 declare const game: any;
 

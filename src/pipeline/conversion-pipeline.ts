@@ -30,8 +30,6 @@ import {
 } from "./pipeline-report.js";
 import { ModuleLogger } from "../utils/logger.js";
 
-const MODULE_ID = "starfinder-thirdparty";
-
 // ── Progress callback ─────────────────────────────────────────────────────────
 
 export interface PipelineProgress {
@@ -141,7 +139,7 @@ export class ConversionPipeline {
       const msg = err instanceof Error ? err.message : String(err);
       return {
         ...base,
-        packId: converter.packId,
+        packId: "",
         disposition: "failed",
         documentName: "",
         warnings: [],
@@ -210,7 +208,7 @@ export class ConversionPipeline {
 
       const doc = await pack.getDocument(existing._id);
       if (doc) {
-        await doc.update(result.documentData as Record<string, unknown>);
+        await doc.update(result.documentData as unknown as Record<string, unknown>);
         return { documentName: name, disposition: "updated" };
       }
     }

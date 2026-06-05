@@ -127,7 +127,7 @@ export class JournalConverter {
     }
   }
 
-  private resolvePageName(record: ContentRecord, journalType: string): string {
+  private resolvePageName(_record: ContentRecord, journalType: string): string {
     const typeLabels: Record<string, string> = {
       pdf: "PDF Reference",
       rules: "Rules Reference",

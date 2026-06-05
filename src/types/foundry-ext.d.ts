@@ -108,16 +108,31 @@ declare global {
 
   abstract class ApplicationV2Base {
     static readonly DEFAULT_OPTIONS: Record<string, unknown>;
+    static readonly PARTS: Record<string, { template: string; scrollable?: string[] }>;
+    constructor(options?: Record<string, unknown>);
     render(force?: boolean, options?: Record<string, unknown>): Promise<this>;
     close(options?: Record<string, unknown>): Promise<this>;
     get element(): HTMLElement;
     get title(): string;
+    _prepareContext(options: Record<string, unknown>): Promise<Record<string, unknown>>;
+    _onRender(context: Record<string, unknown>, options: Record<string, unknown>): void;
+    _onClose(options?: Record<string, unknown>): void;
   }
 
   abstract class DialogV2Base extends ApplicationV2Base {
     static confirm(options: { title: string; content: string; yes?: Record<string, unknown>; no?: Record<string, unknown> }): Promise<boolean>;
     static prompt(options: { title: string; content: string; ok?: Record<string, unknown> }): Promise<unknown>;
   }
+
+  const Dialog: {
+    new(options: {
+      title: string;
+      content: string;
+      buttons: Record<string, { label: string; callback: (html: HTMLElement) => void }>;
+      default: string;
+    }): { render(force: boolean): Promise<void> };
+    confirm(options: { title: string; content: string; yes?: Record<string, unknown>; no?: Record<string, unknown> }): Promise<boolean>;
+  };
 
   class ClientSettings {
     register(namespace: string, key: string, data: SettingConfig): void;
@@ -154,10 +169,13 @@ declare global {
       type: "Item" | "Actor" | "JournalEntry";
       system: string;
     };
+    collection: string;
+    index: Array<{ _id: string; name: string; type?: string }>;
     get(id: string): unknown;
     getName(name: string): unknown;
     importDocument(document: Item | Actor | JournalEntry): Promise<unknown>;
     getDocuments(query?: Record<string, unknown>): Promise<unknown[]>;
+    getDocument(id: string): Promise<Item | Actor | JournalEntry | undefined>;
     documentClass: typeof Item | typeof Actor | typeof JournalEntry;
     locked: boolean;
   }
@@ -172,6 +190,7 @@ declare global {
       data: Record<string, unknown>,
       options?: Record<string, unknown>
     ): Promise<Item | undefined>;
+    update(data: Record<string, unknown>, options?: Record<string, unknown>): Promise<this>;
     getFlag(scope: string, key: string): unknown;
     setFlag(scope: string, key: string, value: unknown): Promise<this>;
     toObject(): Record<string, unknown>;
@@ -187,6 +206,7 @@ declare global {
       data: Record<string, unknown>,
       options?: Record<string, unknown>
     ): Promise<Actor | undefined>;
+    update(data: Record<string, unknown>, options?: Record<string, unknown>): Promise<this>;
     getFlag(scope: string, key: string): unknown;
     setFlag(scope: string, key: string, value: unknown): Promise<this>;
     toObject(): Record<string, unknown>;
@@ -200,6 +220,7 @@ declare global {
       data: Record<string, unknown>,
       options?: Record<string, unknown>
     ): Promise<JournalEntry | undefined>;
+    update(data: Record<string, unknown>, options?: Record<string, unknown>): Promise<this>;
     getFlag(scope: string, key: string): unknown;
     setFlag(scope: string, key: string, value: unknown): Promise<this>;
     toObject(): Record<string, unknown>;

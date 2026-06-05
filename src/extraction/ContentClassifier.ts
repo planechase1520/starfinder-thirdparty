@@ -1,5 +1,5 @@
-import type { ContentCategory } from "../database/content-record.js";
 import type { DetectorMatch, IContentDetector } from "../pdf/pdf-types.js";
+import type { ContentCategory } from "../database/content-record.js";
 import { WeaponDetector } from "./WeaponDetector.js";
 import { ArmorDetector } from "./ArmorDetector.js";
 import { SpellDetector } from "./SpellDetector.js";

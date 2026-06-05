@@ -13,7 +13,7 @@
  * documents. That conversion is planned for a future milestone.
  */
 
-import type { ContentCategory } from "../database/content-record.js";
+import type { ContentCategory, ContentRecord } from "../database/content-record.js";
 import {
   CONTENT_CATEGORIES,
   CATEGORY_LABELS,
@@ -369,7 +369,7 @@ export class ImportWizardApp extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   private async validateDrafts(): Promise<void> {
     if (this.state.overwriteDuplicates) {
-      this.state.validationReport = ImportValidator.validateBatchWithOverwrite(this.state.drafts);
+      this.state.validationReport = ImportValidator.validateBatchWithOverwrite(this.state.drafts, this.state.overwriteDuplicates);
     } else {
       this.state.validationReport = ImportValidator.validateBatch(this.state.drafts);
     }
@@ -406,7 +406,11 @@ export class ImportWizardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const globalMeta = this.state.globalMetadata;
 
     // Build ContentRecord drafts from validated ContentDrafts
-    const records = validDrafts.map((d) => ({
+    const now = new Date().toISOString();
+    const records: ContentRecord[] = validDrafts.map((d) => ({
+      id: `record_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      importedDate: now,
+      schemaVersion: "2.0.0",
       name: String(d["name"] ?? ""),
       category: (isValidCategoryValue(d["category"])
         ? d["category"]
@@ -423,17 +427,17 @@ export class ImportWizardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     try {
       const result = await ContentDatabase.importBatch(records, this.state.overwriteDuplicates);
-      this.state.savedCount = result.created + result.updated;
-      this.state.saveErrors = result.errors.map((e) => e.message);
+      this.state.savedCount = result.added.length + result.overwritten.length;
+      this.state.saveErrors = result.failed.map((e) => e.reason);
 
       ui.notifications.info(
-        `Saved ${result.created} new record(s)${result.updated > 0 ? `, updated ${result.updated}` : ""}` +
-        `${result.skipped > 0 ? `, skipped ${result.skipped} duplicate(s)` : ""}.`
+        `Saved ${result.added.length} new record(s)${result.overwritten.length > 0 ? `, updated ${result.overwritten.length}` : ""}` +
+        `${result.skipped.length > 0 ? `, skipped ${result.skipped.length} duplicate(s)` : ""}.`
       );
 
       ModuleLogger.info(
-        `[ImportWizard] DB save: ${result.created} created, ${result.updated} updated, ` +
-        `${result.skipped} skipped, ${result.errors.length} error(s).`
+        `[ImportWizard] DB save: ${result.added.length} created, ${result.overwritten.length} updated, ` +
+        `${result.skipped.length} skipped, ${result.failed.length} error(s).`
       );
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

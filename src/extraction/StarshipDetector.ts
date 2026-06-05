@@ -51,7 +51,8 @@ export class StarshipDetector implements IContentDetector {
     }
 
     let size = "Medium";
-    const sizeRegexMatch = text.match(/\b(tiny|small|medium|large|huge|gargantuan|colossal)\s+starship/i);
+    const sizePattern = /\b(tiny|small|medium|large|huge|gargantuan|colossal)\s+starship/i;
+    const sizeRegexMatch = text.match(sizePattern);
     if (sizeRegexMatch) {
       size = sizeRegexMatch[1].charAt(0).toUpperCase() + sizeRegexMatch[1].slice(1).toLowerCase();
     }
@@ -145,7 +146,7 @@ export class StarshipDetector implements IContentDetector {
     const descriptionLines: string[] = [];
     const starshipKeywords = /^(tier|speed|maneuverability|hp|dt|ct|shields|power\s*core|drift\s*engine|sensors|attack|attacks|crew):?/i;
     for (const line of lines) {
-      if (line === name || sizeRegexMatch.test(line)) {
+      if (line === name || sizePattern.test(line)) {
         continue;
       }
       if (starshipKeywords.test(line)) {

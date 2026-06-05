@@ -26,8 +26,6 @@ import type {
 import { hashFieldPaths } from "./schema-types.js";
 import { ModuleLogger } from "../utils/logger.js";
 
-const MODULE_ID = "starfinder-thirdparty";
-
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 /** Maps a JavaScript value to a FieldDataType string. */

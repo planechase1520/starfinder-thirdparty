@@ -216,7 +216,7 @@ export class ContentBrowserApp extends HandlebarsApplicationMixin(ApplicationV2)
     // --- Category checkboxes ---
     el.querySelectorAll<HTMLInputElement>(".sf3pl-category-filter").forEach((cb) => {
       cb.addEventListener("change", () => {
-        const checked = [...el.querySelectorAll<HTMLInputElement>(".sf3pl-category-filter:checked")]
+        const checked = Array.from(el.querySelectorAll<HTMLInputElement>(".sf3pl-category-filter:checked"))
           .map((c) => c.value as ContentCategory);
         this.state.filter.categories = checked.length > 0 ? checked : undefined;
         void this.render(true);

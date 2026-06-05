@@ -279,8 +279,8 @@ export class TemplateManagerApp extends HandlebarsApplicationMixin(ApplicationV2
         buttons: {
           ok: {
             label: "Add",
-            callback: (html: JQuery) => {
-              inputEl = (html as unknown as HTMLElement).querySelector<HTMLInputElement>("#sf3pl-uuid-input");
+            callback: (html: HTMLElement) => {
+              inputEl = html.querySelector<HTMLInputElement>("#sf3pl-uuid-input");
               const val = inputEl?.value?.trim() ?? "";
               resolve(val || null);
             },
@@ -310,8 +310,8 @@ export class TemplateManagerApp extends HandlebarsApplicationMixin(ApplicationV2
         buttons: {
           ok: {
             label: "Save",
-            callback: (html: JQuery) => {
-              const el = (html as unknown as HTMLElement).querySelector<HTMLInputElement>("#sf3pl-notes-input");
+            callback: (html: HTMLElement) => {
+              const el = html.querySelector<HTMLInputElement>("#sf3pl-notes-input");
               resolve(el?.value?.trim() ?? "");
             },
           },
@@ -329,18 +329,6 @@ export class TemplateManagerApp extends HandlebarsApplicationMixin(ApplicationV2
 
 // ── Foundry globals ───────────────────────────────────────────────────────────
 
-declare const Dialog: new (options: {
-  title: string;
-  content: string;
-  buttons: Record<string, { label: string; callback: (html: JQuery) => void }>;
-  default: string;
-}) => { render(force: boolean): Promise<void> };
-
 declare function fromUuid(
   uuid: string
 ): Promise<{ uuid: string; name: string; type: string; system: unknown } | null>;
-
-// Re-export so Dialog.confirm works (static method pattern used in schema-manager)
-declare namespace Dialog {
-  function confirm(options: { title: string; content: string }): Promise<boolean>;
-}

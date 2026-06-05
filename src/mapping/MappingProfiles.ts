@@ -14,12 +14,9 @@
  */
 
 import type { ContentCategory } from "../database/content-record.js";
-import type { DiscoveredSchema } from "../schema/schema-types.js";
 import type { MappingRule, ExactRule } from "./MappingRules.js";
 import { SchemaRegistry } from "../schema/SchemaRegistry.js";
 import { ModuleLogger } from "../utils/logger.js";
-
-const MODULE_ID = "starfinder-thirdparty";
 
 // ── Profile shape ─────────────────────────────────────────────────────────────
 

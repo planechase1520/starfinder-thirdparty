@@ -316,7 +316,7 @@ export class ExtractionReviewApp extends HandlebarsApplicationMixin(ApplicationV
     );
 
     try {
-      const result = await ContentDatabase.addBatch(records, { overwriteDuplicates: false });
+      const result = await ContentDatabase.importBatch(records, false);
       const saved = result.added.length;
       const skipped = result.skipped.length;
       ui.notifications.info(

@@ -21,7 +21,6 @@
  *   - EMPTY_RAW_CONTENT     : rawContent has no fields beyond name/category
  */
 
-import type { ContentCategory } from "../database/content-record.js";
 import { CONTENT_CATEGORIES, isValidCategory } from "../database/content-record.js";
 import { ContentDatabase } from "../database/content-database.js";
 
