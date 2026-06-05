@@ -1,0 +1,412 @@
+<div class="sf3pl-e2e-wrapper">
+
+  {{!-- Step indicator --}}
+  <div class="sf3pl-e2e-steps">
+    <div class="sf3pl-e2e-step {{#eq step 0}}active{{/eq}} {{#gt step 0}}done{{/gt}}">
+      <span class="sf3pl-e2e-step-num">1</span>
+      <span class="sf3pl-e2e-step-label">Source</span>
+    </div>
+    <div class="sf3pl-e2e-step-connector"></div>
+    <div class="sf3pl-e2e-step {{#eq step 1}}active{{/eq}} {{#gt step 1}}done{{/gt}}">
+      <span class="sf3pl-e2e-step-num">2</span>
+      <span class="sf3pl-e2e-step-label">Extract</span>
+    </div>
+    <div class="sf3pl-e2e-step-connector"></div>
+    <div class="sf3pl-e2e-step {{#eq step 2}}active{{/eq}} {{#gt step 2}}done{{/gt}}">
+      <span class="sf3pl-e2e-step-num">3</span>
+      <span class="sf3pl-e2e-step-label">Review</span>
+    </div>
+    <div class="sf3pl-e2e-step-connector"></div>
+    <div class="sf3pl-e2e-step {{#eq step 3}}active{{/eq}} {{#gt step 3}}done{{/gt}}">
+      <span class="sf3pl-e2e-step-num">4</span>
+      <span class="sf3pl-e2e-step-label">Convert</span>
+    </div>
+    <div class="sf3pl-e2e-step-connector"></div>
+    <div class="sf3pl-e2e-step {{#eq step 4}}active{{/eq}}">
+      <span class="sf3pl-e2e-step-num">5</span>
+      <span class="sf3pl-e2e-step-label">Done</span>
+    </div>
+  </div>
+
+  {{!-- Body --}}
+  <div class="sf3pl-e2e-body">
+
+    {{!-- ═══ STEP 0: Source ═══ --}}
+    {{#if isStep0}}
+    <div class="sf3pl-e2e-step-content">
+      <h3><i class="fas fa-file-pdf"></i> Step 1: Select PDF Files</h3>
+      <p class="sf3pl-e2e-description">
+        Drop one or more Starfinder PDF files onto the area below. Enter the source book and
+        publisher so every extracted record is tagged correctly.
+      </p>
+
+      {{!-- Drop zone --}}
+      <div class="sf3pl-e2e-dropzone">
+        <i class="fas fa-cloud-upload-alt sf3pl-e2e-drop-icon"></i>
+        <p>Drop PDF files here or</p>
+        <label class="sf3pl-btn sf3pl-btn-secondary" for="sf3pl-e2e-file-input">
+          <i class="fas fa-folder-open"></i> Browse…
+        </label>
+        <input type="file" id="sf3pl-e2e-file-input" accept=".pdf,application/pdf" multiple style="display:none" />
+      </div>
+
+      {{!-- Global defaults --}}
+      <div class="sf3pl-e2e-defaults">
+        <h4>Global Defaults</h4>
+        <div class="sf3pl-form-row">
+          <label for="sf3pl-e2e-source-book">Source Book</label>
+          <input type="text" id="sf3pl-e2e-source-book" value="{{globalSourceBook}}"
+                 placeholder="e.g. Alien Archive 2" />
+          <label for="sf3pl-e2e-publisher">Publisher</label>
+          <input type="text" id="sf3pl-e2e-publisher" value="{{globalPublisher}}"
+                 placeholder="e.g. Paizo Inc." />
+          <button class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" data-action="apply-defaults">
+            Apply to All
+          </button>
+        </div>
+        <div class="sf3pl-form-row">
+          <label for="sf3pl-e2e-enable-ai">Use AI Extraction (requires API key in settings)</label>
+          <input type="checkbox" id="sf3pl-e2e-enable-ai" {{#if enableAi}}checked{{/if}} />
+        </div>
+      </div>
+
+      {{!-- Staged files --}}
+      {{#if hasStaged}}
+      <div class="sf3pl-e2e-staged">
+        <h4>PDFs to Process ({{stagedCount}})</h4>
+        <table class="sf3pl-table">
+          <thead>
+            <tr><th>File</th><th>Size (KB)</th><th>Source Book</th><th>Publisher</th><th></th></tr>
+          </thead>
+          <tbody>
+            {{#each stagedRows}}
+            <tr>
+              <td class="sf3pl-filename">{{filename}}</td>
+              <td>{{sizeKb}}</td>
+              <td>
+                <input type="text" class="sf3pl-inline-input" value="{{sourceBook}}"
+                       data-staged-source-book="{{index}}" placeholder="Source book…" />
+              </td>
+              <td>
+                <input type="text" class="sf3pl-inline-input" value="{{publisher}}"
+                       data-staged-publisher="{{index}}" placeholder="Publisher…" />
+              </td>
+              <td>
+                <button class="sf3pl-btn sf3pl-btn-danger sf3pl-btn-xs"
+                        data-action="remove-staged" data-index="{{index}}">
+                  <i class="fas fa-times"></i>
+                </button>
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{else}}
+      <div class="sf3pl-empty-state sf3pl-e2e-empty">
+        <i class="fas fa-file-pdf"></i>
+        <p>No PDFs selected yet. Drop files above to get started.</p>
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- ═══ STEP 1: Extract ═══ --}}
+    {{#if isStep1}}
+    <div class="sf3pl-e2e-step-content">
+      <h3><i class="fas fa-cog {{#if isExtracting}}fa-spin{{/if}}"></i> Step 2: Extracting Content</h3>
+
+      {{#if isExtracting}}
+      <div class="sf3pl-e2e-progress-block">
+        <p class="sf3pl-e2e-phase-label">{{extractionPhase}}</p>
+        <div class="sf3pl-progress-bar-track sf3pl-e2e-progress-track">
+          <div class="sf3pl-progress-bar-fill" style="width:{{extractionProgress}}%"></div>
+        </div>
+        <p class="sf3pl-e2e-progress-pct">{{extractionProgress}}%</p>
+      </div>
+      <p class="sf3pl-e2e-hint">Processing PDFs… this may take a few minutes for large files.</p>
+      {{else}}
+      <div class="sf3pl-e2e-extraction-done">
+        <i class="fas fa-check-circle sf3pl-icon-success"></i>
+        <p><strong>Extraction complete!</strong> Found
+          <strong>{{totalExtracted}}</strong> record(s) across
+          <strong>{{extractionResultSummaries.length}}</strong> file(s).</p>
+      </div>
+
+      {{#if extractionResultSummaries.length}}
+      <table class="sf3pl-table sf3pl-e2e-result-table">
+        <thead>
+          <tr><th>File</th><th>Pages</th><th>Records</th><th>OCR Pages</th><th>Errors</th></tr>
+        </thead>
+        <tbody>
+          {{#each extractionResultSummaries}}
+          <tr>
+            <td class="sf3pl-filename">{{filename}}</td>
+            <td>{{totalPages}}</td>
+            <td><strong>{{records}}</strong></td>
+            <td>{{ocrPages}}</td>
+            <td>{{#gt errors 0}}<span class="sf3pl-badge-error">{{errors}}</span>{{else}}—{{/gt}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{/if}}
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- ═══ STEP 2: Review ═══ --}}
+    {{#if isStep2}}
+    <div class="sf3pl-e2e-step-content">
+      <h3><i class="fas fa-list-check"></i> Step 3: Review Extracted Records</h3>
+      <p class="sf3pl-e2e-description">
+        Review the records detected from your PDFs. Accept the ones you want to import,
+        reject any that are incorrect, or edit the name and category.
+      </p>
+
+      {{!-- Status bar --}}
+      <div class="sf3pl-e2e-review-statusbar">
+        <span class="sf3pl-badge sf3pl-badge-neutral">Total: {{totalReview}}</span>
+        <span class="sf3pl-badge sf3pl-badge-pending">Pending: {{reviewStatusCounts.pending}}</span>
+        <span class="sf3pl-badge sf3pl-badge-success">Accepted: {{reviewStatusCounts.accepted}}</span>
+        <span class="sf3pl-badge sf3pl-badge-edited">Edited: {{reviewStatusCounts.edited}}</span>
+        <span class="sf3pl-badge sf3pl-badge-danger">Rejected: {{reviewStatusCounts.rejected}}</span>
+      </div>
+
+      {{!-- Bulk actions + filter --}}
+      <div class="sf3pl-e2e-review-toolbar">
+        <button class="sf3pl-btn sf3pl-btn-success sf3pl-btn-sm" data-action="accept-all">
+          <i class="fas fa-check-double"></i> Accept All Pending
+        </button>
+        <button class="sf3pl-btn sf3pl-btn-danger sf3pl-btn-sm" data-action="reject-all">
+          <i class="fas fa-times"></i> Reject All Pending
+        </button>
+        <span class="sf3pl-e2e-filter-label">Filter:</span>
+        <button class="sf3pl-btn sf3pl-btn-sm {{#eq reviewFilter "all"}}sf3pl-btn-primary{{else}}sf3pl-btn-secondary{{/eq}}"
+                data-filter-status="all">All</button>
+        <button class="sf3pl-btn sf3pl-btn-sm {{#eq reviewFilter "pending"}}sf3pl-btn-primary{{else}}sf3pl-btn-secondary{{/eq}}"
+                data-filter-status="pending">Pending</button>
+        <button class="sf3pl-btn sf3pl-btn-sm {{#eq reviewFilter "accepted"}}sf3pl-btn-primary{{else}}sf3pl-btn-secondary{{/eq}}"
+                data-filter-status="accepted">Accepted</button>
+        <button class="sf3pl-btn sf3pl-btn-sm {{#eq reviewFilter "rejected"}}sf3pl-btn-primary{{else}}sf3pl-btn-secondary{{/eq}}"
+                data-filter-status="rejected">Rejected</button>
+      </div>
+
+      {{!-- Records table --}}
+      {{#if reviewRows.length}}
+      <table class="sf3pl-table sf3pl-e2e-review-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Source</th>
+            <th>Conf.</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each reviewRows}}
+          <tr class="sf3pl-review-row sf3pl-review-{{status}}">
+            <td>
+              <input type="text" class="sf3pl-inline-input"
+                     value="{{name}}" data-edit-name data-global-index="{{globalIndex}}" />
+            </td>
+            <td>
+              <select class="sf3pl-inline-select" data-edit-category data-global-index="{{globalIndex}}">
+                {{!-- categories rendered by JS, fallback below --}}
+              </select>
+              <span class="sf3pl-category-label">{{category}}</span>
+            </td>
+            <td><small>{{sourceBook}}</small></td>
+            <td>{{confidence}}%</td>
+            <td>
+              <span class="sf3pl-status-badge sf3pl-status-{{status}}">{{status}}</span>
+            </td>
+            <td class="sf3pl-action-cell">
+              <button class="sf3pl-btn sf3pl-btn-success sf3pl-btn-xs"
+                      data-action="accept-record" data-global-index="{{globalIndex}}"
+                      title="Accept">
+                <i class="fas fa-check"></i>
+              </button>
+              <button class="sf3pl-btn sf3pl-btn-danger sf3pl-btn-xs"
+                      data-action="reject-record" data-global-index="{{globalIndex}}"
+                      title="Reject">
+                <i class="fas fa-times"></i>
+              </button>
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{else}}
+      <div class="sf3pl-empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>No records match the current filter.</p>
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- ═══ STEP 3: Convert ═══ --}}
+    {{#if isStep3}}
+    <div class="sf3pl-e2e-step-content">
+      <h3><i class="fas fa-cogs {{#if isConverting}}fa-spin{{/if}}"></i> Step 4: Convert to Foundry</h3>
+
+      {{#unless isConverting}}
+      <p class="sf3pl-e2e-description">
+        <strong>{{acceptedForConversion}}</strong> record(s) will be saved to the database and
+        converted into SFRPG compendium entries.
+      </p>
+
+      {{!-- Duplicate policy --}}
+      <div class="sf3pl-e2e-policy-block">
+        <h4><i class="fas fa-copy"></i> Duplicate Handling</h4>
+        <p class="sf3pl-hint">What to do if an entry with the same name already exists in the compendium?</p>
+        <label class="sf3pl-radio-label">
+          <input type="radio" name="duplicate-policy" value="replace"
+                 {{#eq duplicatePolicy "replace"}}checked{{/eq}} />
+          <strong>Replace</strong> — overwrite the existing compendium entry
+        </label>
+        <label class="sf3pl-radio-label">
+          <input type="radio" name="duplicate-policy" value="skip"
+                 {{#eq duplicatePolicy "skip"}}checked{{/eq}} />
+          <strong>Skip</strong> — leave the existing entry unchanged
+        </label>
+        <label class="sf3pl-radio-label">
+          <input type="radio" name="duplicate-policy" value="new-version"
+                 {{#eq duplicatePolicy "new-version"}}checked{{/eq}} />
+          <strong>Create New Version</strong> — import with a unique suffix (e.g. "Longsword v2")
+        </label>
+      </div>
+      {{/unless}}
+
+      {{#if isConverting}}
+      <div class="sf3pl-e2e-progress-block">
+        <p class="sf3pl-e2e-phase-label">Converting: {{conversionCurrent}}</p>
+        <div class="sf3pl-progress-bar-track sf3pl-e2e-progress-track">
+          <div class="sf3pl-progress-bar-fill" style="width:{{conversionProgress}}%"></div>
+        </div>
+        <p class="sf3pl-e2e-progress-pct">{{conversionProgress}}%</p>
+      </div>
+      <p class="sf3pl-e2e-hint">Creating Foundry documents and writing to compendium packs…</p>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- ═══ STEP 4: Done ═══ --}}
+    {{#if isStep4}}
+    <div class="sf3pl-e2e-step-content sf3pl-e2e-done">
+      <div class="sf3pl-e2e-done-header">
+        <i class="fas fa-trophy sf3pl-icon-success sf3pl-e2e-trophy"></i>
+        <h3>Import Complete!</h3>
+      </div>
+
+      {{#if hasPipelineReport}}
+      <div class="sf3pl-e2e-stats-grid">
+        <div class="sf3pl-e2e-stat sf3pl-stat-imported">
+          <span class="sf3pl-stat-value">{{stats.imported}}</span>
+          <span class="sf3pl-stat-label">New</span>
+        </div>
+        <div class="sf3pl-e2e-stat sf3pl-stat-updated">
+          <span class="sf3pl-stat-value">{{stats.updated}}</span>
+          <span class="sf3pl-stat-label">Updated</span>
+        </div>
+        <div class="sf3pl-e2e-stat sf3pl-stat-skipped">
+          <span class="sf3pl-stat-value">{{stats.skipped}}</span>
+          <span class="sf3pl-stat-label">Skipped</span>
+        </div>
+        <div class="sf3pl-e2e-stat sf3pl-stat-failed">
+          <span class="sf3pl-stat-value">{{stats.failed}}</span>
+          <span class="sf3pl-stat-label">Failed</span>
+        </div>
+      </div>
+
+      <p class="sf3pl-e2e-done-message">
+        Your Starfinder content is now available in the Foundry compendium packs.
+        Players can drag items directly onto their character sheets.
+      </p>
+
+      {{#if hasFailures}}
+      <div class="sf3pl-e2e-failures">
+        <h4><i class="fas fa-exclamation-triangle"></i> Conversion Failures</h4>
+        <table class="sf3pl-table">
+          <thead><tr><th>Name</th><th>Category</th><th>Error</th></tr></thead>
+          <tbody>
+            {{#each failedRows}}
+            <tr>
+              <td>{{name}}</td>
+              <td>{{category}}</td>
+              <td class="sf3pl-error-text">{{errors}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{/if}}
+
+      <div class="sf3pl-e2e-done-actions">
+        <button class="sf3pl-btn sf3pl-btn-secondary" data-action="export-report">
+          <i class="fas fa-download"></i> Export Full Report (JSON)
+        </button>
+        <button class="sf3pl-btn sf3pl-btn-primary" data-action="restart">
+          <i class="fas fa-redo"></i> Import Another Source
+        </button>
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+  </div>
+
+  {{!-- Footer navigation --}}
+  <div class="sf3pl-e2e-footer">
+    {{!-- Back --}}
+    {{#unless isStep0}}
+    {{#unless isStep1}}
+    {{#unless isStep4}}
+    {{#unless isConverting}}
+    <button class="sf3pl-btn sf3pl-btn-secondary" data-action="prev-step">
+      <i class="fas fa-arrow-left"></i> Back
+    </button>
+    {{/unless}}
+    {{/unless}}
+    {{/unless}}
+    {{/unless}}
+
+    <span class="sf3pl-e2e-footer-spacer"></span>
+
+    {{!-- Next / primary actions --}}
+    {{#if isStep0}}
+    <button class="sf3pl-btn sf3pl-btn-primary" data-action="next-step"
+            {{#unless hasStaged}}disabled{{/unless}}>
+      <i class="fas fa-play"></i> Extract Content ({{stagedCount}} PDF{{#gt stagedCount 1}}s{{/gt}})
+    </button>
+    {{/if}}
+
+    {{#if isStep1}}
+    {{#unless isExtracting}}
+    <button class="sf3pl-btn sf3pl-btn-primary" data-action="next-step">
+      <i class="fas fa-arrow-right"></i> Review Records ({{totalExtracted}})
+    </button>
+    {{/unless}}
+    {{/if}}
+
+    {{#if isStep2}}
+    <button class="sf3pl-btn sf3pl-btn-primary" data-action="next-step"
+            {{#unless acceptedCount}}disabled{{/unless}}>
+      <i class="fas fa-arrow-right"></i> Configure Conversion ({{acceptedCount}} accepted)
+    </button>
+    {{/if}}
+
+    {{#if isStep3}}
+    {{#unless isConverting}}
+    <button class="sf3pl-btn sf3pl-btn-success" data-action="next-step"
+            {{#unless acceptedForConversion}}disabled{{/unless}}>
+      <i class="fas fa-rocket"></i> Import to Foundry ({{acceptedForConversion}} records)
+    </button>
+    {{/unless}}
+    {{/if}}
+  </div>
+
+</div>

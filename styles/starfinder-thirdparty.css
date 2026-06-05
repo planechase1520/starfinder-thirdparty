@@ -2804,3 +2804,425 @@
 .sf3pl-status-badge.sf3pl-status-accepted { color: var(--sf3pl-success); }
 .sf3pl-status-badge.sf3pl-status-edited { color: var(--sf3pl-primary); }
 .sf3pl-status-badge.sf3pl-status-rejected { color: var(--sf3pl-muted); }
+
+/* =============================================================================
+   Milestone 6 — End-to-End Import Wizard
+   ============================================================================= */
+
+.sf3pl-e2e-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Step indicator ──────────────────────────────────────────────────────────── */
+
+.sf3pl-e2e-steps {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--sf3pl-bg-dark);
+  border-bottom: 1px solid var(--sf3pl-border);
+  gap: 0;
+}
+
+.sf3pl-e2e-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 70px;
+}
+
+.sf3pl-e2e-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--sf3pl-border);
+  color: var(--sf3pl-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.25s, color 0.25s;
+}
+
+.sf3pl-e2e-step.active .sf3pl-e2e-step-num {
+  background: var(--sf3pl-primary);
+  color: #fff;
+}
+
+.sf3pl-e2e-step.done .sf3pl-e2e-step-num {
+  background: var(--sf3pl-success);
+  color: #fff;
+}
+
+.sf3pl-e2e-step-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--sf3pl-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sf3pl-e2e-step.active .sf3pl-e2e-step-label { color: var(--sf3pl-primary); }
+.sf3pl-e2e-step.done  .sf3pl-e2e-step-label { color: var(--sf3pl-success); }
+
+.sf3pl-e2e-step-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--sf3pl-border);
+  margin-bottom: 12px;
+}
+
+/* ── Body ───────────────────────────────────────────────────────────────────── */
+
+.sf3pl-e2e-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+}
+
+.sf3pl-e2e-step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sf3pl-e2e-step-content h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--sf3pl-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sf3pl-e2e-description {
+  font-size: var(--sf3pl-font-sm);
+  color: var(--sf3pl-muted);
+  margin: 0;
+}
+
+/* ── Drop zone ───────────────────────────────────────────────────────────────── */
+
+.sf3pl-e2e-dropzone {
+  border: 2px dashed var(--sf3pl-primary);
+  border-radius: var(--sf3pl-radius);
+  padding: 1.5rem;
+  text-align: center;
+  background: rgba(58, 123, 213, 0.04);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sf3pl-e2e-dropzone.drag-over {
+  background: rgba(58, 123, 213, 0.12);
+  border-color: var(--sf3pl-success);
+}
+
+.sf3pl-e2e-drop-icon {
+  font-size: 2rem;
+  color: var(--sf3pl-primary);
+  opacity: 0.6;
+}
+
+.sf3pl-e2e-dropzone p {
+  font-size: var(--sf3pl-font-sm);
+  color: var(--sf3pl-muted);
+  margin: 0;
+}
+
+/* ── Defaults block ──────────────────────────────────────────────────────────── */
+
+.sf3pl-e2e-defaults {
+  background: var(--sf3pl-bg-dark);
+  border: 1px solid var(--sf3pl-border);
+  border-radius: var(--sf3pl-radius);
+  padding: 0.75rem 1rem;
+}
+
+.sf3pl-e2e-defaults h4 {
+  font-size: var(--sf3pl-font-sm);
+  font-weight: 700;
+  color: var(--sf3pl-text);
+  margin: 0 0 0.5rem;
+}
+
+/* ── Staged files ───────────────────────────────────────────────────────────── */
+
+.sf3pl-e2e-staged h4 {
+  font-size: var(--sf3pl-font-sm);
+  font-weight: 700;
+  color: var(--sf3pl-text);
+  margin: 0 0 0.4rem;
+}
+
+.sf3pl-e2e-empty {
+  margin-top: 0.5rem;
+}
+
+/* ── Progress block ──────────────────────────────────────────────────────────── */
+
+.sf3pl-e2e-progress-block {
+  background: var(--sf3pl-bg-dark);
+  border: 1px solid var(--sf3pl-border);
+  border-radius: var(--sf3pl-radius);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.sf3pl-e2e-phase-label {
+  font-size: var(--sf3pl-font-sm);
+  font-weight: 600;
+  color: var(--sf3pl-text);
+  margin: 0 0 0.6rem;
+}
+
+.sf3pl-e2e-progress-track {
+  margin: 0.5rem 0;
+}
+
+.sf3pl-e2e-progress-pct {
+  font-size: 0.7rem;
+  color: var(--sf3pl-muted);
+  margin: 0;
+}
+
+.sf3pl-e2e-hint {
+  font-size: var(--sf3pl-font-xs);
+  color: var(--sf3pl-muted);
+  text-align: center;
+  margin: 0;
+  font-style: italic;
+}
+
+/* ── Extraction done block ───────────────────────────────────────────────────── */
+
+.sf3pl-e2e-extraction-done {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(82, 196, 26, 0.06);
+  border: 1px solid var(--sf3pl-success);
+  border-radius: var(--sf3pl-radius);
+}
+
+.sf3pl-e2e-extraction-done i {
+  font-size: 1.5rem;
+}
+
+.sf3pl-e2e-extraction-done p { margin: 0; font-size: var(--sf3pl-font-sm); }
+
+.sf3pl-e2e-result-table { width: 100%; }
+
+/* ── Review step ──────────────────────────────────────────────────────────────── */
+
+.sf3pl-e2e-review-statusbar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sf3pl-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 99px;
+  background: var(--sf3pl-bg-dark);
+  border: 1px solid var(--sf3pl-border);
+}
+
+.sf3pl-badge-neutral { color: var(--sf3pl-text); }
+.sf3pl-badge-pending  { color: var(--sf3pl-warning); border-color: var(--sf3pl-warning); }
+.sf3pl-badge-success  { color: var(--sf3pl-success); border-color: var(--sf3pl-success); }
+.sf3pl-badge-edited   { color: var(--sf3pl-primary); border-color: var(--sf3pl-primary); }
+.sf3pl-badge-danger   { color: var(--sf3pl-failure); border-color: var(--sf3pl-failure); }
+.sf3pl-badge-error    { color: var(--sf3pl-failure); }
+
+.sf3pl-e2e-review-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.sf3pl-e2e-filter-label {
+  font-size: var(--sf3pl-font-xs);
+  font-weight: 600;
+  color: var(--sf3pl-muted);
+  margin-left: 0.4rem;
+}
+
+.sf3pl-e2e-review-table { width: 100%; }
+
+.sf3pl-review-row.sf3pl-review-accepted { background: rgba(82, 196, 26, 0.04); }
+.sf3pl-review-row.sf3pl-review-rejected { background: rgba(255, 77, 79, 0.04); opacity: 0.65; }
+.sf3pl-review-row.sf3pl-review-edited   { background: rgba(58, 123, 213, 0.04); }
+
+.sf3pl-category-label {
+  font-size: var(--sf3pl-font-xs);
+  color: var(--sf3pl-muted);
+  display: block;
+  white-space: nowrap;
+}
+
+.sf3pl-action-cell {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+/* ── Duplicate policy block ──────────────────────────────────────────────────── */
+
+.sf3pl-e2e-policy-block {
+  background: var(--sf3pl-bg-dark);
+  border: 1px solid var(--sf3pl-border);
+  border-radius: var(--sf3pl-radius);
+  padding: 0.85rem 1rem;
+}
+
+.sf3pl-e2e-policy-block h4 {
+  font-size: var(--sf3pl-font-sm);
+  font-weight: 700;
+  color: var(--sf3pl-text);
+  margin: 0 0 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sf3pl-hint {
+  font-size: var(--sf3pl-font-xs);
+  color: var(--sf3pl-muted);
+  margin: 0 0 0.6rem;
+}
+
+.sf3pl-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--sf3pl-font-sm);
+  padding: 0.3rem 0;
+  cursor: pointer;
+}
+
+.sf3pl-radio-label input[type="radio"] { cursor: pointer; accent-color: var(--sf3pl-primary); }
+
+/* ── Done step ────────────────────────────────────────────────────────────────── */
+
+.sf3pl-e2e-done {
+  align-items: center;
+}
+
+.sf3pl-e2e-done-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0 0.5rem;
+}
+
+.sf3pl-e2e-done-header h3 {
+  font-size: 1.15rem;
+  color: var(--sf3pl-success);
+  justify-content: center;
+}
+
+.sf3pl-e2e-trophy {
+  font-size: 2.5rem;
+  color: var(--sf3pl-success);
+}
+
+.sf3pl-e2e-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 480px;
+}
+
+.sf3pl-e2e-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--sf3pl-bg-dark);
+  border: 1px solid var(--sf3pl-border);
+  border-radius: var(--sf3pl-radius);
+  padding: 0.75rem 0.5rem;
+}
+
+.sf3pl-stat-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sf3pl-stat-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sf3pl-muted);
+  margin-top: 0.25rem;
+}
+
+.sf3pl-stat-imported .sf3pl-stat-value { color: var(--sf3pl-success); }
+.sf3pl-stat-updated  .sf3pl-stat-value { color: var(--sf3pl-primary); }
+.sf3pl-stat-skipped  .sf3pl-stat-value { color: var(--sf3pl-warning); }
+.sf3pl-stat-failed   .sf3pl-stat-value { color: var(--sf3pl-failure); }
+
+.sf3pl-e2e-done-message {
+  font-size: var(--sf3pl-font-sm);
+  color: var(--sf3pl-muted);
+  text-align: center;
+  max-width: 560px;
+  margin: 0;
+}
+
+.sf3pl-e2e-failures {
+  width: 100%;
+}
+
+.sf3pl-e2e-failures h4 {
+  font-size: var(--sf3pl-font-sm);
+  font-weight: 700;
+  color: var(--sf3pl-failure);
+  margin: 0 0 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sf3pl-error-text {
+  font-size: var(--sf3pl-font-xs);
+  color: var(--sf3pl-failure);
+}
+
+.sf3pl-e2e-done-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-top: 0.5rem;
+}
+
+/* ── Footer navigation ────────────────────────────────────────────────────────── */
+
+.sf3pl-e2e-footer {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--sf3pl-border);
+  background: var(--sf3pl-bg-dark);
+  gap: 0.5rem;
+}
+
+.sf3pl-e2e-footer-spacer { flex: 1; }

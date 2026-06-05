@@ -199,7 +199,40 @@
       "ImportWizard": "Open Import Wizard",
       "ContentBrowser": "Open Content Browser",
       "SchemaManager": "Open Schema Manager",
-      "PdfImport": "Import PDF"
+      "PdfImport": "Import PDF",
+      "EndToEndImport": "End-to-End Import Wizard"
+    },
+
+    "EndToEndWizard": {
+      "Title": "SF3PL: Import Wizard (End-to-End)",
+      "Step0Title": "Select PDF Files",
+      "Step1Title": "Extracting Content",
+      "Step2Title": "Review Extracted Records",
+      "Step3Title": "Convert to Foundry",
+      "Step4Title": "Import Complete",
+      "Step0Desc": "Drop one or more Starfinder PDF files. Enter the source book and publisher so every extracted record is tagged correctly.",
+      "Step2Desc": "Review the records detected from your PDFs. Accept the ones you want to import, reject any that are incorrect.",
+      "Step3Desc": "records will be saved to the database and converted into SFRPG compendium entries.",
+      "DuplicatePolicy": "Duplicate Handling",
+      "DuplicatePolicyHint": "What to do if an entry with the same name already exists in the compendium?",
+      "PolicyReplace": "Replace — overwrite the existing compendium entry",
+      "PolicySkip": "Skip — leave the existing entry unchanged",
+      "PolicyNewVersion": "Create New Version — import with a unique suffix (e.g. \"Longsword v2\")",
+      "AcceptAll": "Accept All Pending",
+      "RejectAll": "Reject All Pending",
+      "ExtractBtn": "Extract Content",
+      "ReviewBtn": "Review Records",
+      "ConvertBtn": "Configure Conversion",
+      "ImportBtn": "Import to Foundry",
+      "DoneTitle": "Import Complete!",
+      "DoneMsg": "Your Starfinder content is now available in the Foundry compendium packs. Players can drag items directly onto their character sheets.",
+      "ExportReport": "Export Full Report (JSON)",
+      "ImportAnother": "Import Another Source",
+      "NoFiles": "Add at least one PDF before proceeding.",
+      "NoAccepted": "No records accepted. Accept records in Step 2 first.",
+      "ExtractionError": "PDF extraction encountered an error. See console for details.",
+      "ConversionError": "Conversion pipeline encountered an error. See console.",
+      "DbError": "Failed to save records to database."
     },
 
     "SchemaManager": {

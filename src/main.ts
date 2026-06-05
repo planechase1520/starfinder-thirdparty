@@ -38,6 +38,7 @@ import { TemplateStore } from "./schema/TemplateStore.js";
 import { MappingProfiles } from "./mapping/MappingProfiles.js";
 import { RepairEngine } from "./repair/RepairEngine.js";
 import { PdfImportManager } from "./pdf/PdfImportManager.js";
+import { EndToEndWizardApp } from "./ui/end-to-end-wizard.js";
 
 // ── Module constants ────────────────────────────────────────────────────────
 const MODULE_ID = "starfinder-thirdparty";
@@ -51,6 +52,7 @@ interface SF3PLApi {
   openSchemaManager: () => void;
   openTemplateManager: () => void;
   openPdfImportWizard: () => void;
+  openEndToEndWizard: () => void;
   parsers: typeof ParserRegistry;
   adapters: typeof AdapterRegistry;
   database: typeof ContentDatabase;
@@ -154,6 +156,7 @@ Hooks.once("ready", () => {
         .then(({ PdfImportWizardApp }) => void new PdfImportWizardApp().render(true))
         .catch((e: unknown) => ModuleLogger.error(`[Main] Failed to open PDF wizard: ${String(e)}`));
     },
+    openEndToEndWizard: () => void new EndToEndWizardApp().render(true),
     parsers: ParserRegistry,
     adapters: AdapterRegistry,
     database: ContentDatabase,
@@ -214,6 +217,13 @@ Hooks.on("getSceneControlButtons", (...args: unknown[]) => {
             .then(({ PdfImportWizardApp }) => void new PdfImportWizardApp().render(true))
             .catch((e: unknown) => ModuleLogger.error(`[Main] Failed to open PDF wizard: ${String(e)}`));
         },
+      },
+      {
+        name: "e2e-import",
+        title: "SF3PL.Controls.EndToEndImport",
+        icon: "fas fa-rocket",
+        button: true,
+        onClick: () => void new EndToEndWizardApp().render(true),
       },
     ],
   });
