@@ -1,0 +1,139 @@
+<div class="sf3pl-report-wrapper">
+
+  {{!-- Header --}}
+  <div class="sf3pl-report-header">
+    <div class="sf3pl-report-title">
+      <h2><i class="fas fa-chart-bar"></i> Extraction Report</h2>
+      <span class="sf3pl-report-run-id">Run ID: {{runId}}</span>
+    </div>
+    <div class="sf3pl-report-actions">
+      <button class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" data-action="export-json">
+        <i class="fas fa-download"></i> Export JSON
+      </button>
+    </div>
+  </div>
+
+  {{!-- Summary cards --}}
+  <div class="sf3pl-report-summary">
+    <div class="sf3pl-report-card">
+      <div class="sf3pl-report-card-label">Source</div>
+      <div class="sf3pl-report-card-value sf3pl-report-card-source">{{sourceFile}}</div>
+      <div class="sf3pl-report-card-sub">{{sourceBook}} &mdash; {{publisher}}</div>
+    </div>
+    <div class="sf3pl-report-card">
+      <div class="sf3pl-report-card-label">Processed</div>
+      <div class="sf3pl-report-card-value">{{pages.processed}} / {{pages.total}}</div>
+      <div class="sf3pl-report-card-sub">pages</div>
+    </div>
+    <div class="sf3pl-report-card">
+      <div class="sf3pl-report-card-label">OCR Pages</div>
+      <div class="sf3pl-report-card-value">{{pages.ocr}}</div>
+      <div class="sf3pl-report-card-sub">{{pages.ocrPct}}% &mdash; avg {{pages.avgOcrConfidence}}% confidence</div>
+    </div>
+    <div class="sf3pl-report-card">
+      <div class="sf3pl-report-card-label">Records Found</div>
+      <div class="sf3pl-report-card-value">{{records.total}}</div>
+      <div class="sf3pl-report-card-sub">from PDF</div>
+    </div>
+    <div class="sf3pl-report-card">
+      <div class="sf3pl-report-card-label">Accepted</div>
+      <div class="sf3pl-report-card-value sf3pl-ok">{{records.statusCounts.accepted}}</div>
+      <div class="sf3pl-report-card-sub">+ {{records.statusCounts.edited}} edited</div>
+    </div>
+    <div class="sf3pl-report-card">
+      <div class="sf3pl-report-card-label">Rejected</div>
+      <div class="sf3pl-report-card-value sf3pl-error">{{records.statusCounts.rejected}}</div>
+      <div class="sf3pl-report-card-sub">/ {{records.statusCounts.pending}} pending</div>
+    </div>
+    <div class="sf3pl-report-card">
+      <div class="sf3pl-report-card-label">Duration</div>
+      <div class="sf3pl-report-card-value">{{durationSec}}s</div>
+      <div class="sf3pl-report-card-sub">{{extractedAt}}</div>
+    </div>
+    <div class="sf3pl-report-card">
+      <div class="sf3pl-report-card-label">AI Refinement</div>
+      <div class="sf3pl-report-card-value">
+        {{#if ai.used}}<i class="fas fa-check sf3pl-ok"></i>{{else}}<i class="fas fa-minus"></i>{{/if}}
+      </div>
+      <div class="sf3pl-report-card-sub">{{#if ai.used}}Used{{else}}Not used{{/if}}</div>
+    </div>
+  </div>
+
+  {{!-- Detection method + category breakdown --}}
+  <div class="sf3pl-report-breakdown">
+    <div class="sf3pl-report-section">
+      <h4>Detection Methods</h4>
+      <div class="sf3pl-breakdown-row">
+        <span class="sf3pl-badge">Regex: {{records.methodCounts.regex}}</span>
+        <span class="sf3pl-badge">AI: {{records.methodCounts.ai}}</span>
+        <span class="sf3pl-badge">Manual: {{records.methodCounts.manual}}</span>
+      </div>
+    </div>
+    <div class="sf3pl-report-section">
+      <h4>By Category</h4>
+      <div class="sf3pl-breakdown-row">
+        {{#each records.categoryRows}}
+        <span class="sf3pl-badge">{{category}}: {{count}}</span>
+        {{/each}}
+      </div>
+    </div>
+  </div>
+
+  {{!-- Record table --}}
+  <div class="sf3pl-report-section">
+    <h4>All Records ({{records.total}})</h4>
+    {{#if records.rows}}
+    <table class="sf3pl-table sf3pl-report-records-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Status</th>
+          <th>Confidence</th>
+          <th>Method</th>
+          <th>Page</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each records.rows}}
+        <tr class="sf3pl-report-row sf3pl-status-row-{{status}}">
+          <td>{{name}}</td>
+          <td><span class="sf3pl-badge">{{category}}</span></td>
+          <td><span class="sf3pl-status-badge sf3pl-status-{{status}}">{{status}}</span></td>
+          <td>
+            <span class="sf3pl-confidence sf3pl-confidence-{{confidenceClass}}">{{confidence}}</span>
+          </td>
+          <td>{{method}}</td>
+          <td>{{page}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="sf3pl-empty-note">No records extracted.</p>
+    {{/if}}
+  </div>
+
+  {{!-- Error log --}}
+  {{#if errors.hasErrors}}
+  <div class="sf3pl-report-section sf3pl-report-errors">
+    <h4><i class="fas fa-exclamation-triangle"></i> Errors ({{errors.rows.length}})</h4>
+    <table class="sf3pl-table">
+      <thead>
+        <tr><th>Page</th><th>Phase</th><th>Code</th><th>Message</th></tr>
+      </thead>
+      <tbody>
+        {{#each errors.rows}}
+        <tr>
+          <td>{{page}}</td>
+          <td>{{phase}}</td>
+          <td><code>{{code}}</code></td>
+          <td>{{message}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
+
+</div>

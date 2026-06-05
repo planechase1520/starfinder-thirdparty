@@ -1,0 +1,196 @@
+<div class="sf3pl-pdf-wizard-wrapper">
+
+  {{!-- Header --}}
+  <div class="sf3pl-pdf-wizard-header">
+    <h2><i class="fas fa-file-pdf"></i> PDF Import Wizard</h2>
+    <div class="sf3pl-pdf-wizard-tabs">
+      <button class="sf3pl-tab-btn {{#eq activeTab "queue"}}active{{/eq}}" data-tab="queue">
+        <i class="fas fa-list"></i> Queue
+      </button>
+      <button class="sf3pl-tab-btn {{#eq activeTab "history"}}active{{/eq}}" data-tab="history">
+        <i class="fas fa-history"></i> History
+      </button>
+    </div>
+  </div>
+
+  {{!-- Queue Tab --}}
+  {{#eq activeTab "queue"}}
+  <div class="sf3pl-pdf-tab-content">
+
+    {{!-- Drop zone --}}
+    <div class="sf3pl-pdf-dropzone">
+      <i class="fas fa-cloud-upload-alt"></i>
+      <p>Drop PDF files here or</p>
+      <label class="sf3pl-btn sf3pl-btn-secondary" for="sf3pl-pdf-file-input">
+        <i class="fas fa-folder-open"></i> Browse Files
+      </label>
+      <input type="file" id="sf3pl-pdf-file-input" accept=".pdf,application/pdf" multiple style="display:none" />
+    </div>
+
+    {{!-- Global defaults --}}
+    <div class="sf3pl-pdf-global-defaults">
+      <h4>Global Defaults (applied to all queued files)</h4>
+      <div class="sf3pl-form-row">
+        <label for="sf3pl-global-source-book">Source Book</label>
+        <input type="text" id="sf3pl-global-source-book" value="{{globalSourceBook}}" placeholder="e.g. Alien Archive 2" />
+        <label for="sf3pl-global-publisher">Publisher</label>
+        <input type="text" id="sf3pl-global-publisher" value="{{globalPublisher}}" placeholder="e.g. Paizo Inc." />
+        <button class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" data-action="apply-global">Apply to All</button>
+      </div>
+    </div>
+
+    {{!-- Staged files (not yet processed) --}}
+    {{#if hasStaged}}
+    <div class="sf3pl-pdf-staged">
+      <h4>Staged Files ({{stagedCount}})</h4>
+      <table class="sf3pl-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Size (KB)</th>
+            <th>Source Book</th>
+            <th>Publisher</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each stagedRows}}
+          <tr>
+            <td class="sf3pl-filename">{{filename}}</td>
+            <td>{{sizeKb}}</td>
+            <td>
+              <input type="text" class="sf3pl-inline-input" value="{{sourceBook}}"
+                     data-staged-source-book="{{index}}" placeholder="Source book…" />
+            </td>
+            <td>
+              <input type="text" class="sf3pl-inline-input" value="{{publisher}}"
+                     data-staged-publisher="{{index}}" placeholder="Publisher…" />
+            </td>
+            <td>
+              <button class="sf3pl-btn sf3pl-btn-danger sf3pl-btn-xs" data-action="remove-staged" data-index="{{index}}">
+                <i class="fas fa-times"></i>
+              </button>
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+    {{/if}}
+
+    {{!-- Process toolbar --}}
+    <div class="sf3pl-pdf-toolbar">
+      {{#if isProcessing}}
+        <button class="sf3pl-btn sf3pl-btn-danger" data-action="cancel">
+          <i class="fas fa-stop"></i> Cancel Processing
+        </button>
+        <span class="sf3pl-processing-spinner"><i class="fas fa-spinner fa-spin"></i> Processing…</span>
+      {{else}}
+        <button class="sf3pl-btn sf3pl-btn-primary" data-action="process" {{#unless hasStaged}}disabled{{/unless}}>
+          <i class="fas fa-play"></i> Process PDFs ({{stagedCount}})
+        </button>
+        {{#if queue.hasDone}}
+          <button class="sf3pl-btn sf3pl-btn-secondary" data-action="clear-completed">
+            <i class="fas fa-broom"></i> Clear Completed
+          </button>
+        {{/if}}
+        {{#if queue.hasResult}}
+          <button class="sf3pl-btn sf3pl-btn-success" data-action="review-results">
+            <i class="fas fa-search"></i> Review {{queue.resultRecords}} Extracted Records
+          </button>
+        {{/if}}
+      {{/if}}
+    </div>
+
+    {{!-- Queue table --}}
+    {{#if queue.isEmpty}}
+      <div class="sf3pl-empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>No files in queue. Drop PDF files above to get started.</p>
+      </div>
+    {{else}}
+      <table class="sf3pl-table sf3pl-pdf-queue-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Source Book</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>Records</th>
+            <th>Queued</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each queue.rows}}
+          <tr class="sf3pl-queue-row sf3pl-queue-{{status}}">
+            <td class="sf3pl-filename">{{filename}}<br><small>{{sizeKb}} KB</small></td>
+            <td>{{sourceBook}}<br><small>{{publisher}}</small></td>
+            <td>
+              <span class="sf3pl-status-badge sf3pl-status-{{status}}">{{status}}</span>
+            </td>
+            <td class="sf3pl-progress-cell">
+              <div class="sf3pl-progress-bar-track">
+                <div class="sf3pl-progress-bar-fill" style="width:{{percent}}%"></div>
+              </div>
+              <small>{{phaseLabel}} ({{percent}}%)</small>
+            </td>
+            <td>{{recordsFound}}</td>
+            <td><small>{{queuedAt}}</small></td>
+          </tr>
+          {{#if errorMessage}}
+          <tr class="sf3pl-queue-error-row">
+            <td colspan="6"><i class="fas fa-exclamation-triangle"></i> {{errorMessage}}</td>
+          </tr>
+          {{/if}}
+          {{/each}}
+        </tbody>
+      </table>
+    {{/if}}
+
+  </div>
+  {{/eq}}
+
+  {{!-- History Tab --}}
+  {{#eq activeTab "history"}}
+  <div class="sf3pl-pdf-tab-content">
+    {{#if history.isEmpty}}
+      <div class="sf3pl-empty-state">
+        <i class="fas fa-history"></i>
+        <p>No import history yet. Process PDFs to build history.</p>
+      </div>
+    {{else}}
+      <table class="sf3pl-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Source Book</th>
+            <th>Date</th>
+            <th>Pages</th>
+            <th>Records</th>
+            <th>Accepted</th>
+            <th>Duration</th>
+            <th>OCR</th>
+            <th>AI</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each history.rows}}
+          <tr>
+            <td class="sf3pl-filename">{{filename}}</td>
+            <td>{{sourceBook}}</td>
+            <td><small>{{date}}</small></td>
+            <td>{{totalPages}}</td>
+            <td>{{recordsFound}}</td>
+            <td>{{recordsAccepted}}</td>
+            <td>{{durationSec}}s</td>
+            <td>{{#if ocrUsed}}<i class="fas fa-check sf3pl-ok"></i>{{else}}—{{/if}}</td>
+            <td>{{#if aiUsed}}<i class="fas fa-check sf3pl-ok"></i>{{else}}—{{/if}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    {{/if}}
+  </div>
+  {{/eq}}
+
+</div>

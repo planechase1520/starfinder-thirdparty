@@ -124,8 +124,8 @@ export class ImportWizardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       index: i + 1,
       name: String(d["name"] ?? "(no name)"),
       category: String(d["category"] ?? this.state.defaultCategory),
-      sourceBook: String(d["sourceBook"] ?? this.state.globalMetadata.sourceBook || "—"),
-      publisher: String(d["publisher"] ?? this.state.globalMetadata.publisher || "—"),
+      sourceBook: String((d["sourceBook"] ?? this.state.globalMetadata.sourceBook) || "—"),
+      publisher: String((d["publisher"] ?? this.state.globalMetadata.publisher) || "—"),
     }));
 
     // Validation summary

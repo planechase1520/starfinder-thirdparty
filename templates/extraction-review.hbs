@@ -1,0 +1,183 @@
+<div class="sf3pl-review-wrapper">
+
+  {{!-- Top toolbar --}}
+  <div class="sf3pl-review-toolbar">
+    <div class="sf3pl-review-meta">
+      <strong>{{sourceFile}}</strong>
+      <span class="sf3pl-badge">{{sourceBook}}</span>
+      <span class="sf3pl-badge sf3pl-badge-secondary">{{publisher}}</span>
+    </div>
+
+    <div class="sf3pl-review-status-row">
+      <button class="sf3pl-filter-btn {{#eq filter "all"}}active{{/eq}}" data-filter="all">
+        All ({{totalRecords}})
+      </button>
+      <button class="sf3pl-filter-btn sf3pl-filter-pending {{#eq filter "pending"}}active{{/eq}}" data-filter="pending">
+        Pending ({{statusCounts.pending}})
+      </button>
+      <button class="sf3pl-filter-btn sf3pl-filter-accepted {{#eq filter "accepted"}}active{{/eq}}" data-filter="accepted">
+        Accepted ({{statusCounts.accepted}})
+      </button>
+      <button class="sf3pl-filter-btn sf3pl-filter-edited {{#eq filter "edited"}}active{{/eq}}" data-filter="edited">
+        Edited ({{statusCounts.edited}})
+      </button>
+      <button class="sf3pl-filter-btn sf3pl-filter-rejected {{#eq filter "rejected"}}active{{/eq}}" data-filter="rejected">
+        Rejected ({{statusCounts.rejected}})
+      </button>
+    </div>
+
+    <div class="sf3pl-review-bulk">
+      <button class="sf3pl-btn sf3pl-btn-success sf3pl-btn-sm" data-action="accept-all">Accept All Pending</button>
+      <button class="sf3pl-btn sf3pl-btn-danger sf3pl-btn-sm" data-action="reject-all">Reject All Pending</button>
+      <button class="sf3pl-btn sf3pl-btn-primary sf3pl-btn-sm" data-action="save-to-db">
+        <i class="fas fa-database"></i> Save to Database
+      </button>
+      <button class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" data-action="open-report">
+        <i class="fas fa-chart-bar"></i> Report
+      </button>
+    </div>
+  </div>
+
+  {{!-- Navigation bar --}}
+  <div class="sf3pl-review-nav">
+    <button class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" data-action="prev"
+            {{#unless navigation.hasPrev}}disabled{{/unless}}>
+      <i class="fas fa-chevron-left"></i> Prev
+    </button>
+    <span class="sf3pl-nav-counter">
+      {{navigation.current}} / {{navigation.total}}
+    </span>
+    <button class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" data-action="next"
+            {{#unless navigation.hasNext}}disabled{{/unless}}>
+      Next <i class="fas fa-chevron-right"></i>
+    </button>
+
+    {{#if current}}
+    <span class="sf3pl-nav-name">{{current.name}}</span>
+    <span class="sf3pl-status-badge sf3pl-status-{{current.status}}">{{current.status}}</span>
+    <span class="sf3pl-badge">p.{{current.sourcePageNumber}}</span>
+    {{/if}}
+  </div>
+
+  {{!-- Main split pane --}}
+  {{#if current}}
+  <div class="sf3pl-review-split">
+
+    {{!-- Left: Raw extracted text --}}
+    <div class="sf3pl-review-raw">
+      <div class="sf3pl-review-pane-header">
+        <h4><i class="fas fa-file-alt"></i> Raw Extracted Text</h4>
+        <span class="sf3pl-badge">Method: {{current.detectionMethod}}</span>
+        <span class="sf3pl-confidence-badge sf3pl-confidence-{{#if (gt current.confidencePct 79)}}high{{else}}{{#if (gt current.confidencePct 49)}}medium{{else}}low{{/if}}{{/if}}">
+          {{current.confidencePct}}% confidence
+        </span>
+      </div>
+      <pre class="sf3pl-raw-text">{{current.rawText}}</pre>
+    </div>
+
+    {{!-- Right: Structured fields --}}
+    <div class="sf3pl-review-structured">
+      <div class="sf3pl-review-pane-header">
+        <h4><i class="fas fa-list-ul"></i> Structured Data</h4>
+        <div class="sf3pl-review-actions">
+          <button class="sf3pl-btn sf3pl-btn-success sf3pl-btn-sm" data-action="accept">
+            <i class="fas fa-check"></i> Accept
+          </button>
+          <button class="sf3pl-btn sf3pl-btn-danger sf3pl-btn-sm" data-action="reject">
+            <i class="fas fa-times"></i> Reject
+          </button>
+          <button class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" data-action="edit">
+            <i class="fas fa-pen"></i> {{#if editMode}}Stop Editing{{else}}Edit{{/if}}
+          </button>
+          <button class="sf3pl-btn sf3pl-btn-secondary sf3pl-btn-sm" data-action="merge">
+            <i class="fas fa-code-merge"></i> Merge Text→Notes
+          </button>
+          {{#if editMode}}
+          <button class="sf3pl-btn sf3pl-btn-primary sf3pl-btn-sm" data-action="save-draft">
+            <i class="fas fa-save"></i> Save Draft
+          </button>
+          {{/if}}
+        </div>
+      </div>
+
+      {{!-- Metadata fields --}}
+      <div class="sf3pl-review-meta-fields">
+        <div class="sf3pl-review-field-row">
+          <label>Name</label>
+          {{#if editMode}}
+          <input type="text" class="sf3pl-inline-input" value="{{current.name}}" data-edit-name />
+          {{else}}
+          <span>{{current.name}}</span>
+          {{/if}}
+        </div>
+        <div class="sf3pl-review-field-row">
+          <label>Category</label>
+          {{#if editMode}}
+          <select data-edit-category>
+            {{#each categories}}
+            <option value="{{this}}" {{#eq this ../current.category}}selected{{/eq}}>{{this}}</option>
+            {{/each}}
+          </select>
+          {{else}}
+          <span class="sf3pl-badge">{{current.category}}</span>
+          {{/if}}
+        </div>
+        <div class="sf3pl-review-field-row">
+          <label>Source Book</label>
+          <span>{{current.sourceBook}}</span>
+        </div>
+        <div class="sf3pl-review-field-row">
+          <label>Page</label>
+          <span>{{current.sourcePageNumber}}</span>
+        </div>
+        <div class="sf3pl-review-field-row">
+          <label>Tags</label>
+          <span class="sf3pl-tag-list">{{current.autoTagsJoined}}</span>
+        </div>
+        <div class="sf3pl-review-field-row">
+          <label>Notes</label>
+          {{#if editMode}}
+          <textarea class="sf3pl-inline-textarea" data-edit-notes>{{current.notes}}</textarea>
+          {{else}}
+          <span>{{current.notes}}</span>
+          {{/if}}
+        </div>
+      </div>
+
+      {{!-- Structured data table --}}
+      {{#if current.structuredRows}}
+      <div class="sf3pl-review-fields-table-wrap">
+        <table class="sf3pl-table sf3pl-review-fields-table">
+          <thead>
+            <tr><th>Field</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            {{#each current.structuredRows}}
+            <tr>
+              <td class="sf3pl-field-key">{{key}}</td>
+              <td>
+                {{#if isEditable}}
+                <input type="text" class="sf3pl-inline-input sf3pl-field-value"
+                       value="{{value}}" data-field-key="{{key}}" />
+                {{else}}
+                <span class="sf3pl-field-value">{{value}}</span>
+                {{/if}}
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{/if}}
+
+    </div>
+  </div>
+
+  {{else}}
+  <div class="sf3pl-empty-state">
+    <i class="fas fa-search"></i>
+    <p>No records match the current filter.</p>
+  </div>
+  {{/if}}
+
+</div>

@@ -14,6 +14,26 @@
       "DefaultPublisher": {
         "Name": "Default Publisher",
         "Hint": "Default publisher name pre-filled in the Import Wizard metadata form."
+      },
+      "OcrEnabled": {
+        "Name": "Enable OCR for Image-Based PDFs",
+        "Hint": "When enabled, pages with insufficient embedded text will be processed through Tesseract OCR (loaded from CDN on first use)."
+      },
+      "AiProvider": {
+        "Name": "AI Provider",
+        "Hint": "AI provider used for content extraction refinement. Requires an API key."
+      },
+      "AiBaseUrl": {
+        "Name": "AI Base URL",
+        "Hint": "Base URL for the OpenAI-compatible API endpoint (e.g. https://api.openai.com or https://openrouter.ai/api)."
+      },
+      "AiModel": {
+        "Name": "AI Model",
+        "Hint": "Model name to use for extraction (e.g. gpt-4o-mini, gpt-4o, claude-3-haiku)."
+      },
+      "AiApiKey": {
+        "Name": "AI API Key",
+        "Hint": "Your API key for the selected AI provider. Stored in world settings (GM-only). Leave blank to disable AI extraction."
       }
     },
 
@@ -178,7 +198,8 @@
     "Controls": {
       "ImportWizard": "Open Import Wizard",
       "ContentBrowser": "Open Content Browser",
-      "SchemaManager": "Open Schema Manager"
+      "SchemaManager": "Open Schema Manager",
+      "PdfImport": "Import PDF"
     },
 
     "SchemaManager": {
@@ -253,6 +274,78 @@
       "ActionSkipped": "Could not auto-repair",
       "NoSchemaMapping": "No schema mapping for category: \"{category}\". Cannot repair.",
       "NoSchemaDiscovered": "No discovered schema for {docType}.{subtype}. Open Schema Manager and run Scan first."
+    },
+
+    "PdfImport": {
+      "Title": "PDF Import Wizard",
+      "TabQueue": "Queue",
+      "TabHistory": "History",
+      "DropZoneHint": "Drop PDF files here or browse",
+      "Browse": "Browse Files",
+      "GlobalDefaults": "Global Defaults",
+      "GlobalSourceBook": "Source Book",
+      "GlobalPublisher": "Publisher",
+      "ApplyGlobal": "Apply to All",
+      "StagedFiles": "Staged Files",
+      "ProcessPdfs": "Process PDFs",
+      "CancelProcessing": "Cancel Processing",
+      "ClearCompleted": "Clear Completed",
+      "ReviewResults": "Review Extracted Records",
+      "QueueEmpty": "No files in queue. Drop PDF files above to get started.",
+      "HistoryEmpty": "No import history yet.",
+      "Processing": "Processing…",
+      "StatusQueued": "Queued",
+      "StatusProcessing": "Processing",
+      "StatusDone": "Done",
+      "StatusFailed": "Failed",
+      "StatusCancelled": "Cancelled",
+      "ProcessingComplete": "PDF processing complete. {count} record(s) extracted.",
+      "ProcessingError": "PDF processing encountered an error. See console for details."
+    },
+
+    "ExtractionReview": {
+      "Title": "Extraction Review",
+      "FilterAll": "All",
+      "FilterPending": "Pending",
+      "FilterAccepted": "Accepted",
+      "FilterEdited": "Edited",
+      "FilterRejected": "Rejected",
+      "AcceptAllPending": "Accept All Pending",
+      "RejectAllPending": "Reject All Pending",
+      "SaveToDatabase": "Save to Database",
+      "OpenReport": "Report",
+      "Accept": "Accept",
+      "Reject": "Reject",
+      "Edit": "Edit",
+      "StopEditing": "Stop Editing",
+      "SaveDraft": "Save Draft",
+      "MergeText": "Merge Text→Notes",
+      "RawText": "Raw Extracted Text",
+      "StructuredData": "Structured Data",
+      "NoRecords": "No records match the current filter.",
+      "SavedToDb": "Saved {count} record(s) to the database.",
+      "DuplicatesSkipped": "{count} duplicate(s) skipped.",
+      "SaveFailed": "Database save failed. See console for details.",
+      "NoAccepted": "No records are marked as accepted."
+    },
+
+    "ExtractionReport": {
+      "Title": "Extraction Report",
+      "ExportJson": "Export JSON",
+      "RunId": "Run ID",
+      "PagesProcessed": "Pages Processed",
+      "OcrPages": "OCR Pages",
+      "RecordsFound": "Records Found",
+      "Accepted": "Accepted",
+      "Rejected": "Rejected",
+      "Duration": "Duration",
+      "AiRefinement": "AI Refinement",
+      "DetectionMethods": "Detection Methods",
+      "ByCategory": "By Category",
+      "AllRecords": "All Records",
+      "NoRecords": "No records extracted.",
+      "ErrorLog": "Errors",
+      "ExportDone": "Extraction report downloaded."
     }
   }
 }

@@ -18,6 +18,12 @@ export const SETTINGS = {
   CONTENT_DATABASE: "contentDatabase",
   SCHEMA_CACHE: "schemaCache",
   DOCUMENT_TEMPLATES: "documentTemplates",
+  PDF_IMPORT_HISTORY: "pdfImportHistory",
+  AI_API_KEY: "aiApiKey",
+  AI_PROVIDER: "aiProvider",
+  AI_BASE_URL: "aiBaseUrl",
+  AI_MODEL: "aiModel",
+  OCR_ENABLED: "ocrEnabled",
 } as const;
 
 export type SettingKey = (typeof SETTINGS)[keyof typeof SETTINGS];
@@ -85,6 +91,64 @@ export function registerSettings(): void {
     config: false,
     type: Object,
     default: { schemaVersion: "4.0.0", savedAt: "", templates: [] },
+  });
+
+  game.settings.register(MODULE_ID, SETTINGS.PDF_IMPORT_HISTORY, {
+    name: "PDF Import History",
+    scope: "world",
+    config: false,
+    type: Object,
+    default: { schemaVersion: "5.0.0", entries: [] },
+  });
+
+  game.settings.register(MODULE_ID, SETTINGS.OCR_ENABLED, {
+    name: "SF3PL.Settings.OcrEnabled.Name",
+    hint: "SF3PL.Settings.OcrEnabled.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
+  game.settings.register(MODULE_ID, SETTINGS.AI_PROVIDER, {
+    name: "SF3PL.Settings.AiProvider.Name",
+    hint: "SF3PL.Settings.AiProvider.Hint",
+    scope: "world",
+    config: true,
+    type: String,
+    default: "openai",
+    choices: {
+      openai: "OpenAI",
+      openrouter: "OpenRouter",
+      custom: "Custom (OpenAI-compatible)",
+    } as Record<string, string>,
+  });
+
+  game.settings.register(MODULE_ID, SETTINGS.AI_BASE_URL, {
+    name: "SF3PL.Settings.AiBaseUrl.Name",
+    hint: "SF3PL.Settings.AiBaseUrl.Hint",
+    scope: "world",
+    config: true,
+    type: String,
+    default: "https://api.openai.com",
+  });
+
+  game.settings.register(MODULE_ID, SETTINGS.AI_MODEL, {
+    name: "SF3PL.Settings.AiModel.Name",
+    hint: "SF3PL.Settings.AiModel.Hint",
+    scope: "world",
+    config: true,
+    type: String,
+    default: "gpt-4o-mini",
+  });
+
+  game.settings.register(MODULE_ID, SETTINGS.AI_API_KEY, {
+    name: "SF3PL.Settings.AiApiKey.Name",
+    hint: "SF3PL.Settings.AiApiKey.Hint",
+    scope: "world",
+    config: true,
+    type: String,
+    default: "",
   });
 
   ModuleLogger.info("[Settings] All settings registered.");

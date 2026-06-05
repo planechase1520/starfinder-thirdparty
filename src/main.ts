@@ -37,6 +37,7 @@ import { SchemaRegistry } from "./schema/SchemaRegistry.js";
 import { TemplateStore } from "./schema/TemplateStore.js";
 import { MappingProfiles } from "./mapping/MappingProfiles.js";
 import { RepairEngine } from "./repair/RepairEngine.js";
+import { PdfImportManager } from "./pdf/PdfImportManager.js";
 
 // ── Module constants ────────────────────────────────────────────────────────
 const MODULE_ID = "starfinder-thirdparty";
@@ -49,6 +50,7 @@ interface SF3PLApi {
   openContentBrowser: () => void;
   openSchemaManager: () => void;
   openTemplateManager: () => void;
+  openPdfImportWizard: () => void;
   parsers: typeof ParserRegistry;
   adapters: typeof AdapterRegistry;
   database: typeof ContentDatabase;
@@ -58,6 +60,7 @@ interface SF3PLApi {
   templates: typeof TemplateStore;
   profiles: typeof MappingProfiles;
   repair: typeof RepairEngine;
+  pdfManager: typeof PdfImportManager;
   version: string;
 }
 
@@ -109,6 +112,11 @@ Hooks.once("ready", () => {
     ModuleLogger.info(`[Main] ContentDatabase ready: ${ContentDatabase.getAll().length} record(s).`);
   });
 
+  // Initialize the PDF import manager (M5)
+  void PdfImportManager.initialize().then(() => {
+    ModuleLogger.info("[Main] PdfImportManager ready.");
+  });
+
   // Initialize template store (M4)
   void TemplateStore.initialize().then(() => {
     ModuleLogger.info(`[Main] TemplateStore ready: ${TemplateStore.count()} template(s).`);
@@ -141,6 +149,11 @@ Hooks.once("ready", () => {
     openContentBrowser: () => void new ContentBrowserApp().render(true),
     openSchemaManager: () => void new SchemaManagerApp().render(true),
     openTemplateManager: () => void new TemplateManagerApp().render(true),
+    openPdfImportWizard: () => {
+      import("./ui/pdf-import-wizard.js")
+        .then(({ PdfImportWizardApp }) => void new PdfImportWizardApp().render(true))
+        .catch((e: unknown) => ModuleLogger.error(`[Main] Failed to open PDF wizard: ${String(e)}`));
+    },
     parsers: ParserRegistry,
     adapters: AdapterRegistry,
     database: ContentDatabase,
@@ -150,6 +163,7 @@ Hooks.once("ready", () => {
     templates: TemplateStore,
     profiles: MappingProfiles,
     repair: RepairEngine,
+    pdfManager: PdfImportManager,
     version: MODULE_VERSION,
   };
   moduleObj["api"] = api;
@@ -188,6 +202,17 @@ Hooks.on("getSceneControlButtons", (controls: unknown[]) => {
         icon: "fas fa-database",
         button: true,
         onClick: () => void new SchemaManagerApp().render(true),
+      },
+      {
+        name: "pdf-import",
+        title: "SF3PL.Controls.PdfImport",
+        icon: "fas fa-file-pdf",
+        button: true,
+        onClick: () => {
+          import("./ui/pdf-import-wizard.js")
+            .then(({ PdfImportWizardApp }) => void new PdfImportWizardApp().render(true))
+            .catch((e: unknown) => ModuleLogger.error(`[Main] Failed to open PDF wizard: ${String(e)}`));
+        },
       },
     ],
   });
