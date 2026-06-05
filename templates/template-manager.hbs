@@ -1,0 +1,101 @@
+<div class="sf3pl-template-manager-layout">
+
+  {{!-- ── Header bar ── --}}
+  <div class="sf3pl-template-header">
+    <div class="sf3pl-template-header-info">
+      <span>Templates registered: <strong>{{templateCount}}</strong></span>
+      {{#if templateCount}}
+      <span class="sf3pl-muted">Subtypes: {{subtypesSummary}}</span>
+      {{/if}}
+    </div>
+    <div class="sf3pl-template-header-actions">
+      <button class="sf3pl-btn sf3pl-btn-primary" data-action="add-template">
+        <i class="fas fa-plus"></i> Add Template
+      </button>
+      {{#if templateCount}}
+      <button class="sf3pl-btn sf3pl-btn-danger" data-action="clear-all">
+        <i class="fas fa-trash"></i> Clear All
+      </button>
+      {{/if}}
+    </div>
+  </div>
+
+  {{!-- ── Explainer ── --}}
+  <div class="sf3pl-template-explainer">
+    <i class="fas fa-circle-info"></i>
+    Register existing SFRPG documents as templates. The module captures their
+    field structure and uses it to:
+    <ul>
+      <li>Fill missing fields when repairing imported records.</li>
+      <li>Refine schema discovery for document subtypes.</li>
+    </ul>
+    Right-click any Item or Actor in Foundry → <em>Copy UUID</em>, then click
+    <strong>Add Template</strong>.
+  </div>
+
+  {{!-- ── Template table ── --}}
+  {{#if isEmpty}}
+  <div class="sf3pl-empty-state">
+    <i class="fas fa-layer-group fa-3x"></i>
+    <p>No templates registered yet.</p>
+    <p class="sf3pl-muted">
+      Click <strong>Add Template</strong> and provide a document UUID to get started.
+    </p>
+  </div>
+  {{else}}
+  <div class="sf3pl-template-table-wrap">
+    <table class="sf3pl-schema-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Doc Type</th>
+          <th>Subtype</th>
+          <th>Fields</th>
+          <th>Schema</th>
+          <th>Added</th>
+          <th>Notes</th>
+          <th class="sf3pl-col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each rows}}
+        <tr data-uuid="{{uuid}}">
+          <td><strong>{{name}}</strong></td>
+          <td>{{documentType}}</td>
+          <td><span class="sf3pl-source-badge">{{subtype}}</span></td>
+          <td class="sf3pl-num">{{fieldCount}}</td>
+          <td>
+            {{#if hasSchema}}
+              <span class="sf3pl-badge sf3pl-badge-ok" title="Schema registered">
+                <i class="fas fa-check"></i>
+              </span>
+            {{else}}
+              <span class="sf3pl-badge sf3pl-badge-warn" title="No schema learned yet">
+                <i class="fas fa-triangle-exclamation"></i>
+              </span>
+            {{/if}}
+          </td>
+          <td class="sf3pl-muted sf3pl-nowrap">{{addedAt}}</td>
+          <td class="sf3pl-notes">{{#if notes}}{{notes}}{{else}}<span class="sf3pl-muted">—</span>{{/if}}</td>
+          <td class="sf3pl-col-actions">
+            <button class="sf3pl-btn sf3pl-btn-xs" data-action="learn-schema"
+              title="Learn schema from this document">
+              <i class="fas fa-graduation-cap"></i>
+            </button>
+            <button class="sf3pl-btn sf3pl-btn-xs" data-action="refresh"
+              title="Re-snapshot system data from the live document">
+              <i class="fas fa-rotate"></i>
+            </button>
+            <button class="sf3pl-btn sf3pl-btn-xs sf3pl-btn-danger" data-action="remove"
+              title="Remove template">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
+
+</div>

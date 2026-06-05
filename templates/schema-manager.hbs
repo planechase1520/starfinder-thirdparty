@@ -1,0 +1,254 @@
+<div class="sf3pl-schema-manager-layout">
+
+  {{!-- ── Toolbar ── --}}
+  <div class="sf3pl-schema-toolbar">
+    <div class="sf3pl-schema-toolbar-left">
+      <button class="sf3pl-btn sf3pl-btn-primary" data-action="scan"
+        {{#if isScanning}}disabled{{/if}}>
+        <i class="fas {{#if isScanning}}fa-spinner fa-spin{{else}}fa-search{{/if}}"></i>
+        {{#if isScanning}}Scanning…{{else}}Scan Current System{{/if}}
+      </button>
+      <button class="sf3pl-btn" data-action="rebuild"
+        {{#if isScanning}}disabled{{/if}}>
+        <i class="fas fa-rotate"></i> Rebuild Registry
+      </button>
+      <button class="sf3pl-btn" data-action="open-template-manager">
+        <i class="fas fa-layer-group"></i> Template Manager
+      </button>
+    </div>
+    <div class="sf3pl-schema-toolbar-right">
+      <div class="sf3pl-schema-meta">
+        <span>System: <strong>{{registry.systemId}}</strong></span>
+        <span>Schemas: <strong>{{registry.totalSchemas}}</strong></span>
+        <span>Fields: <strong>{{registry.totalFields}}</strong></span>
+      </div>
+    </div>
+  </div>
+
+  {{!-- ── Tabs ── --}}
+  <div class="sf3pl-tabs">
+    <button class="sf3pl-tab-btn {{#eq activeTab 'registry'}}active{{/eq}}"
+      data-tab="registry">
+      <i class="fas fa-database"></i> Registry
+      <span class="sf3pl-badge">{{registry.totalSchemas}}</span>
+    </button>
+    <button class="sf3pl-tab-btn {{#eq activeTab 'diffs'}}active{{/eq}}"
+      data-tab="diffs">
+      <i class="fas fa-code-compare"></i> Diffs
+      {{#if diffs.changesFound}}
+        <span class="sf3pl-badge sf3pl-badge-warn">{{diffs.rows.length}}</span>
+      {{/if}}
+    </button>
+    <button class="sf3pl-tab-btn {{#eq activeTab 'mappings'}}active{{/eq}}"
+      data-tab="mappings">
+      <i class="fas fa-diagram-project"></i> Mappings
+      <span class="sf3pl-badge">{{mappings.rows.length}}</span>
+    </button>
+    <button class="sf3pl-tab-btn {{#eq activeTab 'repair'}}active{{/eq}}"
+      data-tab="repair">
+      <i class="fas fa-wrench"></i> Repair
+    </button>
+  </div>
+
+  {{!-- ── Tab Content ── --}}
+  <div class="sf3pl-schema-content">
+
+    {{!-- Registry Tab --}}
+    {{#eq activeTab "registry"}}
+    <div class="sf3pl-tab-panel">
+      {{#if registry.schemas}}
+      <table class="sf3pl-schema-table">
+        <thead>
+          <tr>
+            <th>Document Type</th>
+            <th>Subtype</th>
+            <th>Fields</th>
+            <th>Required</th>
+            <th>Source</th>
+            <th>Hash</th>
+            <th>Discovered</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each registry.schemas}}
+          <tr>
+            <td><span class="sf3pl-doc-type">{{documentType}}</span></td>
+            <td><strong>{{subtype}}</strong></td>
+            <td class="sf3pl-num">{{fieldCount}}</td>
+            <td class="sf3pl-num">{{requiredCount}}</td>
+            <td><span class="sf3pl-source-badge">{{source}}</span></td>
+            <td class="sf3pl-hash"><code>{{schemaHash}}</code></td>
+            <td class="sf3pl-muted">{{discoveredAt}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{else}}
+      <div class="sf3pl-empty-state">
+        <i class="fas fa-database fa-3x"></i>
+        <p>No schemas discovered yet.</p>
+        <p class="sf3pl-muted">Click <strong>Scan Current System</strong> to discover document schemas from the installed Starfinder system.</p>
+      </div>
+      {{/if}}
+    </div>
+    {{/eq}}
+
+    {{!-- Diffs Tab --}}
+    {{#eq activeTab "diffs"}}
+    <div class="sf3pl-tab-panel">
+      <div class="sf3pl-diffs-toolbar">
+        <button class="sf3pl-btn" data-action="export-diffs">
+          <i class="fas fa-download"></i> Export Diff Report
+        </button>
+      </div>
+      {{#if diffs.noDiffs}}
+      <div class="sf3pl-empty-state">
+        <i class="fas fa-check-circle fa-3x sf3pl-text-success"></i>
+        <p>No schema changes detected since the last session.</p>
+      </div>
+      {{else}}
+      <table class="sf3pl-schema-table">
+        <thead>
+          <tr>
+            <th>Document Type</th>
+            <th>Subtype</th>
+            <th>Status</th>
+            <th>Added</th>
+            <th>Removed</th>
+            <th>Changed</th>
+            <th>Newly Required</th>
+            <th>Compared At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each diffs.rows}}
+          <tr class="{{#unless isCompatible}}sf3pl-row-changed{{/unless}}">
+            <td>{{documentType}}</td>
+            <td><strong>{{subtype}}</strong></td>
+            <td>
+              {{#if isCompatible}}
+                <span class="sf3pl-badge sf3pl-badge-ok"><i class="fas fa-check"></i> Compatible</span>
+              {{else}}
+                <span class="sf3pl-badge sf3pl-badge-warn"><i class="fas fa-triangle-exclamation"></i> Changed</span>
+              {{/if}}
+            </td>
+            <td class="sf3pl-num sf3pl-text-success">+{{added}}</td>
+            <td class="sf3pl-num sf3pl-text-error">-{{removed}}</td>
+            <td class="sf3pl-num sf3pl-text-warn">~{{changed}}</td>
+            <td class="sf3pl-num sf3pl-text-warn">{{newlyRequired}}</td>
+            <td class="sf3pl-muted">{{comparedAt}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{/if}}
+    </div>
+    {{/eq}}
+
+    {{!-- Mappings Tab --}}
+    {{#eq activeTab "mappings"}}
+    <div class="sf3pl-tab-panel">
+      {{#if mappings.noProfiles}}
+      <div class="sf3pl-empty-state">
+        <i class="fas fa-diagram-project fa-3x"></i>
+        <p>No mapping profiles built yet.</p>
+        <p class="sf3pl-muted">Run a schema scan to auto-generate profiles.</p>
+      </div>
+      {{else}}
+      <table class="sf3pl-schema-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Doc Type</th>
+            <th>Subtype</th>
+            <th>Rules</th>
+            <th>Valid</th>
+            <th>Gaps</th>
+            <th>Stale</th>
+            <th>Built At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each mappings.rows}}
+          <tr class="{{#unless isValid}}sf3pl-row-changed{{/unless}}">
+            <td><strong>{{category}}</strong></td>
+            <td>{{documentType}}</td>
+            <td>{{subtype}}</td>
+            <td class="sf3pl-num">{{ruleCount}}</td>
+            <td>
+              {{#if isValid}}
+                <span class="sf3pl-badge sf3pl-badge-ok"><i class="fas fa-check"></i></span>
+              {{else}}
+                <span class="sf3pl-badge sf3pl-badge-warn"><i class="fas fa-triangle-exclamation"></i></span>
+              {{/if}}
+            </td>
+            <td class="sf3pl-num {{#if gapCount}}sf3pl-text-warn{{/if}}">{{gapCount}}</td>
+            <td class="sf3pl-num {{#if staleCount}}sf3pl-text-error{{/if}}">{{staleCount}}</td>
+            <td class="sf3pl-muted">{{builtAt}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{/if}}
+    </div>
+    {{/eq}}
+
+    {{!-- Repair Tab --}}
+    {{#eq activeTab "repair"}}
+    <div class="sf3pl-tab-panel">
+      <div class="sf3pl-repair-toolbar">
+        <button class="sf3pl-btn sf3pl-btn-primary" data-action="repair-all">
+          <i class="fas fa-wrench"></i> Repair All Records
+        </button>
+        {{#if repair.totalCount}}
+        <span class="sf3pl-repair-summary">
+          Last run: <strong>{{repair.modifiedCount}}</strong> of
+          <strong>{{repair.totalCount}}</strong> records modified.
+        </span>
+        {{/if}}
+      </div>
+
+      {{#if repair.noneRun}}
+      <div class="sf3pl-empty-state">
+        <i class="fas fa-wrench fa-3x"></i>
+        <p>No repair has been run yet.</p>
+        <p class="sf3pl-muted">
+          Click <strong>Repair All Records</strong> to automatically fill missing
+          fields in the content database using schema defaults and registered templates.
+        </p>
+      </div>
+      {{else}}
+      <table class="sf3pl-schema-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Actions Applied</th>
+            <th>Remaining Issues</th>
+            <th>Modified</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each repair.rows}}
+          <tr class="{{#if wasModified}}sf3pl-row-modified{{/if}}">
+            <td><strong>{{name}}</strong></td>
+            <td>{{category}}</td>
+            <td class="sf3pl-num">{{actionCount}}</td>
+            <td class="sf3pl-num {{#if issueCount}}sf3pl-text-warn{{/if}}">{{issueCount}}</td>
+            <td>
+              {{#if wasModified}}
+                <span class="sf3pl-badge sf3pl-badge-ok"><i class="fas fa-check"></i> Yes</span>
+              {{else}}
+                <span class="sf3pl-badge">No</span>
+              {{/if}}
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{/if}}
+    </div>
+    {{/eq}}
+
+  </div>
+</div>

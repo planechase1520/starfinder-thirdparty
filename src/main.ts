@@ -28,9 +28,15 @@ import { StarfinderAdapter } from "./adapters/starfinder/starfinder.adapter.js";
 
 import { ImportWizardApp } from "./ui/import-wizard.js";
 import { ContentBrowserApp } from "./ui/content-browser.js";
+import { SchemaManagerApp } from "./ui/schema-manager.js";
+import { TemplateManagerApp } from "./ui/template-manager.js";
 import { ContentDatabase } from "./database/content-database.js";
 import { ConverterRegistry } from "./adapters/starfinder/converter-registry.js";
 import { ConversionPipeline } from "./pipeline/conversion-pipeline.js";
+import { SchemaRegistry } from "./schema/SchemaRegistry.js";
+import { TemplateStore } from "./schema/TemplateStore.js";
+import { MappingProfiles } from "./mapping/MappingProfiles.js";
+import { RepairEngine } from "./repair/RepairEngine.js";
 
 // ── Module constants ────────────────────────────────────────────────────────
 const MODULE_ID = "starfinder-thirdparty";
@@ -41,11 +47,17 @@ const SUPPORTED_SYSTEM = "sfrpg";
 interface SF3PLApi {
   openImportWizard: () => void;
   openContentBrowser: () => void;
+  openSchemaManager: () => void;
+  openTemplateManager: () => void;
   parsers: typeof ParserRegistry;
   adapters: typeof AdapterRegistry;
   database: typeof ContentDatabase;
   converters: ConverterRegistry;
   pipeline: ConversionPipeline;
+  schema: typeof SchemaRegistry;
+  templates: typeof TemplateStore;
+  profiles: typeof MappingProfiles;
+  repair: typeof RepairEngine;
   version: string;
 }
 
@@ -97,6 +109,28 @@ Hooks.once("ready", () => {
     ModuleLogger.info(`[Main] ContentDatabase ready: ${ContentDatabase.getAll().length} record(s).`);
   });
 
+  // Initialize template store (M4)
+  void TemplateStore.initialize().then(() => {
+    ModuleLogger.info(`[Main] TemplateStore ready: ${TemplateStore.count()} template(s).`);
+  });
+
+  // Initialize schema registry (M4) — runs after template store so templates
+  // can be used to supplement discovery
+  void SchemaRegistry.initialize().then(() => {
+    const schemaCount = SchemaRegistry.getAll().length;
+    const diffs = SchemaRegistry.getLastDiffs().filter((d) => !d.isCompatible);
+    ModuleLogger.info(`[Main] SchemaRegistry ready: ${schemaCount} schema(s).`);
+    if (diffs.length > 0) {
+      ui.notifications.warn(
+        `SF3PL: ${diffs.length} schema change(s) detected since last session. ` +
+        "Open Schema Manager → Diffs tab for details."
+      );
+    }
+    // Eagerly build all mapping profiles now that schemas are available
+    MappingProfiles.buildAll();
+    ModuleLogger.info("[Main] Mapping profiles built.");
+  });
+
   // Build the Starfinder converter registry
   const converterRegistry = ConverterRegistry.build();
 
@@ -105,11 +139,17 @@ Hooks.once("ready", () => {
   const api: SF3PLApi = {
     openImportWizard: () => void new ImportWizardApp().render(true),
     openContentBrowser: () => void new ContentBrowserApp().render(true),
+    openSchemaManager: () => void new SchemaManagerApp().render(true),
+    openTemplateManager: () => void new TemplateManagerApp().render(true),
     parsers: ParserRegistry,
     adapters: AdapterRegistry,
     database: ContentDatabase,
     converters: converterRegistry,
     pipeline: new ConversionPipeline(converterRegistry),
+    schema: SchemaRegistry,
+    templates: TemplateStore,
+    profiles: MappingProfiles,
+    repair: RepairEngine,
     version: MODULE_VERSION,
   };
   moduleObj["api"] = api;
@@ -141,6 +181,13 @@ Hooks.on("getSceneControlButtons", (controls: unknown[]) => {
         icon: "fas fa-book-open",
         button: true,
         onClick: () => void new ContentBrowserApp().render(true),
+      },
+      {
+        name: "schema-manager",
+        title: "SF3PL.Controls.SchemaManager",
+        icon: "fas fa-database",
+        button: true,
+        onClick: () => void new SchemaManagerApp().render(true),
       },
     ],
   });

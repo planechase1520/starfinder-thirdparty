@@ -1931,3 +1931,350 @@
   background: var(--sf3pl-border);
   border-radius: 999px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Milestone 4 — Schema Manager
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Schema Manager Layout ───────────────────────────────────────────────── */
+
+.sf3pl-schema-manager .window-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sf3pl-schema-manager-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ── Schema Manager Toolbar ──────────────────────────────────────────────── */
+
+.sf3pl-schema-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--sf3pl-card-bg);
+  border-bottom: 1px solid var(--sf3pl-border);
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.sf3pl-schema-toolbar-left {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.sf3pl-schema-toolbar-right { margin-left: auto; }
+
+.sf3pl-schema-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: var(--sf3pl-font-sm);
+  color: var(--sf3pl-muted);
+}
+
+.sf3pl-schema-meta span strong { color: var(--sf3pl-text); }
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+
+.sf3pl-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--sf3pl-border);
+  background: var(--sf3pl-bg);
+  flex-shrink: 0;
+}
+
+.sf3pl-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--sf3pl-font-sm);
+  font-weight: 500;
+  color: var(--sf3pl-muted);
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -2px;
+}
+
+.sf3pl-tab-btn:hover { color: var(--sf3pl-text); }
+.sf3pl-tab-btn.active {
+  color: var(--sf3pl-primary);
+  border-bottom-color: var(--sf3pl-primary);
+}
+
+/* ── Tab panel ───────────────────────────────────────────────────────────── */
+
+.sf3pl-schema-content {
+  flex: 1;
+  overflow: auto;
+  padding: 0.75rem;
+}
+
+.sf3pl-tab-panel { display: block; }
+
+/* ── Schema table (reused across all tabs) ───────────────────────────────── */
+
+.sf3pl-schema-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--sf3pl-font-sm);
+}
+
+.sf3pl-schema-table th {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  background: var(--sf3pl-bg);
+  border-bottom: 2px solid var(--sf3pl-border);
+  font-weight: 600;
+  color: var(--sf3pl-muted);
+  white-space: nowrap;
+}
+
+.sf3pl-schema-table td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--sf3pl-border);
+  vertical-align: middle;
+}
+
+.sf3pl-schema-table tr:last-child td { border-bottom: none; }
+.sf3pl-schema-table tr:hover td { background: var(--sf3pl-bg); }
+
+.sf3pl-schema-table .sf3pl-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf3pl-row-changed td { background: var(--sf3pl-warning-bg) !important; }
+.sf3pl-row-modified td { background: var(--sf3pl-success-bg) !important; }
+
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+
+.sf3pl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--sf3pl-border);
+  color: var(--sf3pl-muted);
+}
+
+.sf3pl-badge-ok {
+  background: var(--sf3pl-success-bg);
+  color: var(--sf3pl-success);
+}
+
+.sf3pl-badge-warn {
+  background: var(--sf3pl-warning-bg);
+  color: var(--sf3pl-warning);
+}
+
+.sf3pl-badge-error {
+  background: var(--sf3pl-failure-bg);
+  color: var(--sf3pl-failure);
+}
+
+/* ── Source badge ────────────────────────────────────────────────────────── */
+
+.sf3pl-source-badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--sf3pl-radius-sm);
+  background: #e8f0fe;
+  color: var(--sf3pl-primary-dark);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* ── Hash display ────────────────────────────────────────────────────────── */
+
+.sf3pl-hash code {
+  font-size: 0.7rem;
+  color: var(--sf3pl-muted);
+  font-family: monospace;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+
+.sf3pl-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--sf3pl-muted);
+  gap: 0.75rem;
+}
+
+.sf3pl-empty-state i { color: var(--sf3pl-border); }
+.sf3pl-empty-state p { margin: 0; }
+.sf3pl-empty-state strong { color: var(--sf3pl-text); }
+
+/* ── Doc type chip ───────────────────────────────────────────────────────── */
+
+.sf3pl-doc-type {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--sf3pl-muted);
+}
+
+/* ── Diffs toolbar ───────────────────────────────────────────────────────── */
+
+.sf3pl-diffs-toolbar {
+  margin-bottom: 0.6rem;
+}
+
+/* ── Repair toolbar ──────────────────────────────────────────────────────── */
+
+.sf3pl-repair-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.sf3pl-repair-summary {
+  font-size: var(--sf3pl-font-sm);
+  color: var(--sf3pl-muted);
+}
+
+.sf3pl-repair-summary strong { color: var(--sf3pl-text); }
+
+/* ── Color utilities ─────────────────────────────────────────────────────── */
+
+.sf3pl-text-success { color: var(--sf3pl-success); }
+.sf3pl-text-error   { color: var(--sf3pl-failure); }
+.sf3pl-text-warn    { color: var(--sf3pl-warning); }
+.sf3pl-nowrap       { white-space: nowrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Milestone 4 — Template Manager
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sf3pl-template-manager .window-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sf3pl-template-manager-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ── Template Manager Header ─────────────────────────────────────────────── */
+
+.sf3pl-template-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--sf3pl-card-bg);
+  border-bottom: 1px solid var(--sf3pl-border);
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.sf3pl-template-header-info {
+  display: flex;
+  gap: 1rem;
+  font-size: var(--sf3pl-font-sm);
+  color: var(--sf3pl-muted);
+  flex-wrap: wrap;
+}
+
+.sf3pl-template-header-info strong { color: var(--sf3pl-text); }
+
+.sf3pl-template-header-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* ── Explainer ───────────────────────────────────────────────────────────── */
+
+.sf3pl-template-explainer {
+  padding: 0.6rem 0.75rem;
+  background: #edf2fb;
+  border-bottom: 1px solid #c7d9f5;
+  font-size: var(--sf3pl-font-sm);
+  color: #2d4a7a;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+.sf3pl-template-explainer i {
+  margin-right: 0.35rem;
+  color: var(--sf3pl-primary);
+}
+
+.sf3pl-template-explainer ul {
+  margin: 0.3rem 0 0.3rem 1.2rem;
+  padding: 0;
+}
+
+.sf3pl-template-explainer em {
+  font-style: italic;
+  color: var(--sf3pl-primary-dark);
+}
+
+/* ── Template table ──────────────────────────────────────────────────────── */
+
+.sf3pl-template-table-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 0.75rem;
+}
+
+/* ── Action buttons in table rows ────────────────────────────────────────── */
+
+.sf3pl-btn-xs {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.72rem;
+  border-radius: var(--sf3pl-radius-sm);
+  border: 1px solid var(--sf3pl-border);
+  background: var(--sf3pl-card-bg);
+  cursor: pointer;
+  color: var(--sf3pl-text);
+  transition: background 0.12s;
+}
+
+.sf3pl-btn-xs:hover { background: var(--sf3pl-bg); }
+
+.sf3pl-btn-danger {
+  border-color: var(--sf3pl-failure);
+  color: var(--sf3pl-failure);
+}
+
+.sf3pl-btn-danger:hover {
+  background: var(--sf3pl-failure-bg);
+}
+
+.sf3pl-col-actions {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.sf3pl-notes {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sf3pl-muted);
+  font-size: var(--sf3pl-font-xs);
+}
