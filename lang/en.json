@@ -99,13 +99,43 @@
       "PackNotFound": "Compendium pack not found. Ensure the module is active and the pack exists.",
       "ParseFailed": "Failed to parse input data.",
       "ImportFailed": "Import failed. See the Import Report for details.",
-      "NotGM": "Only the Game Master can import content."
+      "NotGM": "Only the Game Master can import content.",
+      "DatabaseNotReady": "Content database is not initialized. Try again after the world finishes loading.",
+      "SaveFailed": "Failed to save records to the database.",
+      "DeleteFailed": "Failed to delete record from the database."
     },
 
     "Notifications": {
       "ImportComplete": "Import complete: {success} created, {failed} failed, {skipped} skipped.",
       "ValidationWarning": "{count} entries failed validation and will be skipped.",
-      "ParseWarning": "Parsing completed with {count} error(s). Review before continuing."
+      "ParseWarning": "Parsing completed with {count} error(s). Review before continuing.",
+      "DbSaveComplete": "Saved {created} new record(s){updated}{skipped}.",
+      "DbDeleted": "Deleted \"{name}\".",
+      "DbBulkDeleted": "Deleted {count} record(s).",
+      "NotesSaved": "Notes and tags saved.",
+      "NoParsedRecords": "No records were parsed from the input. Check the format.",
+      "NoValidRecords": "No valid records to save."
+    },
+
+    "Validation": {
+      "MISSING_NAME": "Name is required.",
+      "MISSING_CATEGORY": "Category is required.",
+      "INVALID_CATEGORY": "Category \"{value}\" is not a recognized content category.",
+      "DUPLICATE_NAME": "A record named \"{name}\" already exists in the database.",
+      "WILL_OVERWRITE": "A record named \"{name}\" already exists and will be overwritten.",
+      "MISSING_SOURCE_BOOK": "Source Book is missing.",
+      "MISSING_PUBLISHER": "Publisher is missing.",
+      "MISSING_PAGE_NUMBER": "Page Number is missing or zero.",
+      "EMPTY_RAW_CONTENT": "No field data was found in this record beyond name and category."
+    },
+
+    "Database": {
+      "ImportMethods": {
+        "json": "JSON File",
+        "csv": "CSV File",
+        "txt": "Text / OCR File",
+        "paste": "Pasted Text"
+      }
     },
 
     "Controls": {
