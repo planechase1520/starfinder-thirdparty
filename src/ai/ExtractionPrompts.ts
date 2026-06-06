@@ -42,6 +42,12 @@ const starshipTemplate = {
   userPromptTemplate: "Extract Starfinder 1E starship data from this text from {{sourceBook}}:\n\n{{rawText}}"
 };
 
+const speciesTemplate = {
+  category: "race",
+  systemPrompt: "You are a Starfinder 1E data extraction specialist. Extract species (race) data from the provided text and return ONLY a JSON object. Do not include any text outside the JSON.\n\nThe JSON object must have exactly the following keys and types:\n- name: string\n- hp: number or null (base hit points, usually 4 or 6)\n- size: string or null (one of: fine, diminutive, tiny, small, medium, large, huge, gargantuan, colossal)\n- subtype: string or null (creature subtype, e.g. humanoid)\n- abilityMods: array of objects with { mod: string, ability: string } where ability is one of str/dex/con/int/wis/cha and mod is like '+2' or '-2'\n- racialAbilities: array of objects with { name: string, type: string, description: string } where type is Ex/Su/Sp\n- description: string (general species description, not the racial abilities)",
+  userPromptTemplate: "Extract Starfinder 1E species (race) data from this text from {{sourceBook}}:\n\n{{rawText}}"
+};
+
 PromptManager.register(weaponTemplate);
 PromptManager.register(armorTemplate);
 PromptManager.register(featTemplate);
@@ -49,3 +55,4 @@ PromptManager.register(spellTemplate);
 PromptManager.register(npcTemplate);
 PromptManager.register(vehicleTemplate);
 PromptManager.register(starshipTemplate);
+PromptManager.register(speciesTemplate);

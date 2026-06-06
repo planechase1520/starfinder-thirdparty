@@ -3568,6 +3568,109 @@ class SpellConverter extends ConverterBase {
 }
 
 /**
+ * Species Converter — Milestone 3+
+ *
+ * Converts a ContentRecord with category "race" into a Foundry SFRPG
+ * race Item document.
+ *
+ * SFRPG race items store:
+ *   - hp           — base hit points granted at level 1
+ *   - size         — "fine" | "diminutive" | "tiny" | "small" | "medium" | "large" | "huge" | "gargantuan" | "colossal"
+ *   - subtype      — creature subtype string (e.g. "humanoid")
+ *   - abilityMods  — { parts: [[modifier, abilityKey], …] }
+ *   - damage       — { parts: [] } for natural weapon entries (usually empty on import)
+ *   - modifiers    — flat modifier array (empty on import; user can fill later)
+ *
+ * The rawContent produced by SpeciesDetector includes:
+ *   abilityMods   → Array<{ mod: string; ability: string }>
+ *   hp            → number
+ *   size          → string
+ *   subtype       → string
+ *   racialAbilities → Array<{ name, type, description }>
+ *   description   → string
+ */
+const VALID_SIZES = new Set([
+    "fine", "diminutive", "tiny", "small", "medium",
+    "large", "huge", "gargantuan", "colossal",
+]);
+class SpeciesConverter extends ConverterBase {
+    category = "race";
+    documentType = "Item";
+    sfrpgType = "race";
+    packSuffix = "sftpl-species";
+    buildSystemData(record) {
+        const raw = record.rawContent;
+        const hp = typeof raw["hp"] === "number" ? raw["hp"] : 4;
+        const rawSize = typeof raw["size"] === "string" ? raw["size"].toLowerCase() : "medium";
+        const size = VALID_SIZES.has(rawSize) ? rawSize : "medium";
+        const subtype = typeof raw["subtype"] === "string" ? raw["subtype"] : "humanoid";
+        const abilityModParts = this.buildAbilityModParts(raw["abilityMods"]);
+        const racialAbilityDesc = this.buildRacialAbilitiesHtml(raw["racialAbilities"]);
+        const baseDescription = this.str(record, "description");
+        const fullDescription = racialAbilityDesc
+            ? `${baseDescription}\n\n${racialAbilityDesc}`.trim()
+            : baseDescription;
+        return {
+            description: {
+                value: fullDescription,
+                chat: "",
+                unidentified: "",
+            },
+            source: `${record.sourceBook} pg. ${record.pageNumber}`,
+            hp,
+            size,
+            subtype,
+            abilityMods: {
+                parts: abilityModParts,
+            },
+            damage: {
+                parts: [],
+            },
+            modifiers: [],
+            rarity: this.str(record, "rarity", "common"),
+        };
+    }
+    /**
+     * Converts the SpeciesDetector abilityMods array into the format
+     * expected by SFRPG: [["+2", "str"], ["-2", "int"], …]
+     */
+    buildAbilityModParts(raw) {
+        if (!Array.isArray(raw))
+            return [];
+        const parts = [];
+        for (const entry of raw) {
+            if (entry &&
+                typeof entry === "object" &&
+                !Array.isArray(entry) &&
+                typeof entry.mod === "string" &&
+                typeof entry.ability === "string") {
+                const { mod, ability } = entry;
+                if (mod && ability) {
+                    parts.push([mod, ability]);
+                }
+            }
+        }
+        return parts;
+    }
+    /**
+     * Renders racial abilities as a simple HTML list to embed in the description.
+     * Users can refine this in the item sheet.
+     */
+    buildRacialAbilitiesHtml(raw) {
+        if (!Array.isArray(raw) || raw.length === 0)
+            return "";
+        const items = raw.map((entry) => {
+            const e = entry;
+            const name = e.name ?? "Racial Ability";
+            const type = e.type ? ` (${e.type})` : "";
+            const desc = e.description ?? "";
+            return `<li><strong>${name}${type}:</strong> ${desc}</li>`;
+        });
+        return `<ul>${items.join("")}</ul>`;
+    }
+}
+
+/**
  * Theme Converter — Milestone 3
  *
  * Converts a ContentRecord with category "theme" into a Foundry SFRPG
@@ -3728,6 +3831,7 @@ function createItemConverters() {
         new AugmentationConverter(),
         new FeatConverter(),
         new SpellConverter(),
+        new SpeciesConverter(),
         new ThemeConverter(),
         new ClassConverter(),
         new ArchetypeConverter(),
@@ -10714,8 +10818,200 @@ class StarshipDetector {
     }
 }
 
+/**
+ * Species Detector — detects SFRPG species (race) stat blocks in extracted PDF text.
+ *
+ * A Starfinder species stat block follows this structure:
+ *
+ *   SPECIES NAME
+ *   Ability Adjustments: +2 Str, +2 Con, –2 Int
+ *   Hit Points: 6
+ *   Size and Type: [Species]s are Medium humanoids with the [subtype] subtype.
+ *   [Racial Trait (Ex)]: Description…
+ *
+ * Key discriminators (never appear in weapon/armor/NPC blocks):
+ *   • "Ability Adjustments:" or "Ability Modifiers:"
+ *   • "Hit Points:" followed by a small bare number (not a dice expression)
+ *   • "Size and Type:"
+ *
+ * Each trait block that follows "(Ex)", "(Su)", or "(Sp)" is extracted as a
+ * separate racial ability entry in `racialAbilities`.
+ */
+const ABILITY_NAMES = {
+    str: "str", strength: "str",
+    dex: "dex", dexterity: "dex",
+    con: "con", constitution: "con",
+    int: "int", intelligence: "int",
+    wis: "wis", wisdom: "wis",
+    cha: "cha", charisma: "cha",
+};
+const SIZE_MAP = {
+    fine: "fine", diminutive: "diminutive", tiny: "tiny",
+    small: "small", medium: "medium", large: "large",
+    huge: "huge", gargantuan: "gargantuan", colossal: "colossal",
+};
+class SpeciesDetector {
+    category = "race";
+    canDetect(text) {
+        const lower = text.toLowerCase();
+        const hasAbilityAdj = /ability\s+(adjustments?|modifiers?)\s*:/i.test(text);
+        const hasSizeAndType = /size\s+and\s+type\s*:/i.test(text);
+        let score = 0;
+        if (hasAbilityAdj)
+            score += 3;
+        if (hasSizeAndType)
+            score += 3;
+        if (/hit\s+points?\s*:\s*\d+(?:\s|$)/i.test(text))
+            score += 2;
+        if (/\(Ex\)|\(Su\)|\(Sp\)/i.test(text))
+            score += 1;
+        if (/subtype/i.test(lower))
+            score += 1;
+        if (/racial\s+trait/i.test(lower))
+            score += 1;
+        return score >= 4;
+    }
+    detect(text, pageNumber) {
+        if (!this.canDetect(text))
+            return [];
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0)
+            return [];
+        const name = this.extractName(lines);
+        const abilityMods = this.extractAbilityMods(text);
+        const hp = this.extractHp(text);
+        const size = this.extractSize(text);
+        const subtype = this.extractSubtype(text);
+        const racialAbilities = this.extractRacialAbilities(text);
+        const description = this.buildDescription(lines, name);
+        let matchedCount = 0;
+        if (abilityMods.length > 0)
+            matchedCount += 2;
+        if (hp > 0)
+            matchedCount++;
+        if (size)
+            matchedCount++;
+        if (subtype)
+            matchedCount++;
+        if (racialAbilities.length > 0)
+            matchedCount++;
+        const confidence = Math.min(0.5 + matchedCount * 0.08, 0.97);
+        const autoTags = ["species"];
+        if (subtype)
+            autoTags.push(subtype.toLowerCase());
+        return [{
+                name: name.trim(),
+                rawText: text,
+                structuredData: {
+                    abilityMods,
+                    hp,
+                    size,
+                    subtype,
+                    racialAbilities,
+                    description,
+                },
+                confidence,
+                startIndex: 0,
+                endIndex: text.length,
+                pageNumber,
+                autoTags,
+            }];
+    }
+    extractName(lines) {
+        for (const line of lines) {
+            if (line &&
+                !line.includes(":") &&
+                /^[A-Z][A-Za-z\s'\-–]{2,}$/.test(line) &&
+                line.length < 60) {
+                return line;
+            }
+            if (/^[A-Z][A-Z\s'\-–]{2,}$/.test(line) && line.length < 60) {
+                return line;
+            }
+        }
+        return lines[0] ?? "Unknown Species";
+    }
+    /**
+     * Parses "Ability Adjustments: +2 Str, +2 Con, –2 Int" into
+     * an array of {mod: "+2", ability: "str"} objects.
+     */
+    extractAbilityMods(text) {
+        const match = text.match(/ability\s+(?:adjustments?|modifiers?)\s*:\s*([^\n]+)/i);
+        if (!match)
+            return [];
+        const parts = match[1].split(/,\s*/);
+        const results = [];
+        for (const part of parts) {
+            const modMatch = part.trim().match(/([+\-–−]?\s*\d+)\s+([A-Za-z]+)/);
+            if (modMatch) {
+                const mod = modMatch[1].replace(/–|−/, "-").replace(/\s+/, "");
+                const rawAbility = modMatch[2].toLowerCase();
+                const ability = ABILITY_NAMES[rawAbility];
+                if (ability) {
+                    results.push({ mod: mod.startsWith("-") ? mod : `+${mod.replace("+", "")}`, ability });
+                }
+            }
+        }
+        return results;
+    }
+    extractHp(text) {
+        const match = text.match(/hit\s+points?\s*:\s*(\d+)/i);
+        return match ? parseInt(match[1], 10) : 0;
+    }
+    extractSize(text) {
+        const match = text.match(/size\s+and\s+type\s*:[^.]*?\b(fine|diminutive|tiny|small|medium|large|huge|gargantuan|colossal)\b/i);
+        if (match)
+            return SIZE_MAP[match[1].toLowerCase()] ?? "medium";
+        const fallback = text.match(/\b(fine|diminutive|tiny|small|medium|large|huge|gargantuan|colossal)\b/i);
+        return fallback ? SIZE_MAP[fallback[1].toLowerCase()] ?? "medium" : "medium";
+    }
+    extractSubtype(text) {
+        const subtypeMatch = text.match(/with\s+the\s+(\w+)\s+subtype/i);
+        if (subtypeMatch)
+            return subtypeMatch[1].toLowerCase();
+        const typeMatch = text.match(/(?:are|is)\s+\w+\s+(\w+)\s+with/i);
+        return typeMatch ? typeMatch[1].toLowerCase() : "humanoid";
+    }
+    /**
+     * Extracts individual racial ability blocks.
+     * Each ability is introduced by "Name (Ex):", "Name (Su):", or "Name (Sp):".
+     */
+    extractRacialAbilities(text) {
+        const abilities = [];
+        const regex = /([A-Z][A-Za-z\s'\-–]{1,50}?)\s+\((Ex|Su|Sp)\)\s*:/g;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            const abilityName = match[1].trim();
+            const abilityType = match[2];
+            const start = match.index + match[0].length;
+            const nextMatch = regex.source ? text.slice(start).search(/[A-Z][A-Za-z\s'\-–]{1,50}?\s+\((Ex|Su|Sp)\)\s*:/) : -1;
+            const desc = nextMatch > 0
+                ? text.slice(start, start + nextMatch).trim()
+                : text.slice(start).split(/\n\n/)[0]?.trim() ?? "";
+            abilities.push({ name: abilityName, type: abilityType, description: desc });
+        }
+        return abilities;
+    }
+    buildDescription(lines, speciesName) {
+        const skipPatterns = [
+            /ability\s+(?:adjustments?|modifiers?)\s*:/i,
+            /hit\s+points?\s*:/i,
+            /size\s+and\s+type\s*:/i,
+        ];
+        const descLines = lines.filter(line => {
+            if (line === speciesName)
+                return false;
+            if (skipPatterns.some(p => p.test(line)))
+                return false;
+            return true;
+        });
+        return descLines.join(" ").trim();
+    }
+}
+
 class ContentClassifier {
     static detectors = [
+        new SpeciesDetector(),
         new WeaponDetector(),
         new ArmorDetector(),
         new SpellDetector(),
@@ -10923,6 +11219,11 @@ const starshipTemplate = {
     systemPrompt: "You are a Starfinder 1E data extraction specialist. Extract game data from the provided text and return ONLY a JSON object. Do not include any text outside the JSON.\n\nThe JSON object must have exactly the following keys and types:\n- name: string\n- tier: string or number or null\n- size: string or null\n- hp: number or null\n- dt: number or null\n- ct: number or null\n- speed: string or number or null\n- maneuverability: string or null\n- shields: string or null\n- powerCore: string or null\n- driftEngine: string or null\n- attacks: string or null\n- description: string",
     userPromptTemplate: "Extract Starfinder 1E starship data from this text from {{sourceBook}}:\n\n{{rawText}}"
 };
+const speciesTemplate = {
+    category: "race",
+    systemPrompt: "You are a Starfinder 1E data extraction specialist. Extract species (race) data from the provided text and return ONLY a JSON object. Do not include any text outside the JSON.\n\nThe JSON object must have exactly the following keys and types:\n- name: string\n- hp: number or null (base hit points, usually 4 or 6)\n- size: string or null (one of: fine, diminutive, tiny, small, medium, large, huge, gargantuan, colossal)\n- subtype: string or null (creature subtype, e.g. humanoid)\n- abilityMods: array of objects with { mod: string, ability: string } where ability is one of str/dex/con/int/wis/cha and mod is like '+2' or '-2'\n- racialAbilities: array of objects with { name: string, type: string, description: string } where type is Ex/Su/Sp\n- description: string (general species description, not the racial abilities)",
+    userPromptTemplate: "Extract Starfinder 1E species (race) data from this text from {{sourceBook}}:\n\n{{rawText}}"
+};
 PromptManager.register(weaponTemplate);
 PromptManager.register(armorTemplate);
 PromptManager.register(featTemplate);
@@ -10930,6 +11231,7 @@ PromptManager.register(spellTemplate);
 PromptManager.register(npcTemplate);
 PromptManager.register(vehicleTemplate);
 PromptManager.register(starshipTemplate);
+PromptManager.register(speciesTemplate);
 
 class AiExtractionEngine {
     provider;

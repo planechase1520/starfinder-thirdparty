@@ -12,6 +12,7 @@ export { EquipmentConverter } from "./equipment-converter.js";
 export { AugmentationConverter } from "./augmentation-converter.js";
 export { FeatConverter } from "./feat-converter.js";
 export { SpellConverter } from "./spell-converter.js";
+export { SpeciesConverter } from "./species-converter.js";
 export { ThemeConverter } from "./theme-converter.js";
 export { ClassConverter } from "./class-converter.js";
 export { ArchetypeConverter } from "./archetype-converter.js";
@@ -23,6 +24,7 @@ import { EquipmentConverter } from "./equipment-converter.js";
 import { AugmentationConverter } from "./augmentation-converter.js";
 import { FeatConverter } from "./feat-converter.js";
 import { SpellConverter } from "./spell-converter.js";
+import { SpeciesConverter } from "./species-converter.js";
 import { ThemeConverter } from "./theme-converter.js";
 import { ClassConverter } from "./class-converter.js";
 import { ArchetypeConverter } from "./archetype-converter.js";
@@ -39,6 +41,7 @@ export function createItemConverters(): ICategoryConverter[] {
     new AugmentationConverter(),
     new FeatConverter(),
     new SpellConverter(),
+    new SpeciesConverter(),
     new ThemeConverter(),
     new ClassConverter(),
     new ArchetypeConverter(),

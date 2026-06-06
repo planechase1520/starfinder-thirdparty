@@ -6,6 +6,7 @@ import { SpellDetector } from "./SpellDetector.js";
 import { NpcDetector } from "./NpcDetector.js";
 import { VehicleDetector } from "./VehicleDetector.js";
 import { StarshipDetector } from "./StarshipDetector.js";
+import { SpeciesDetector } from "./SpeciesDetector.js";
 import { ModuleLogger } from "../utils/logger.js";
 
 export interface ClassifierResult {
@@ -17,6 +18,7 @@ export interface ClassifierResult {
 
 export class ContentClassifier {
   private static detectors: IContentDetector[] = [
+    new SpeciesDetector(),
     new WeaponDetector(),
     new ArmorDetector(),
     new SpellDetector(),
