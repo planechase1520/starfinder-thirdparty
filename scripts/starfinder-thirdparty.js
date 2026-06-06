@@ -8311,7 +8311,7 @@ class EndToEndWizardApp extends HandlebarsApplicationMixin$4(ApplicationV2$4) {
  */
 // ── Module constants ────────────────────────────────────────────────────────
 const MODULE_ID$1 = "starfinder-thirdparty";
-const MODULE_VERSION = "1.0.0";
+const MODULE_VERSION = "1.1.0";
 const SUPPORTED_SYSTEM = "sfrpg";
 // ── init hook ───────────────────────────────────────────────────────────────
 Hooks.once("init", () => {
