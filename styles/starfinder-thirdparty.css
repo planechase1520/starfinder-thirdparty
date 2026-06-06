@@ -2633,19 +2633,34 @@
 }
 
 .sf3pl-inline-input,
+.sf3pl-inline-select,
 .sf3pl-inline-textarea {
   width: 100%;
-  border: 1px solid var(--sf3pl-border);
+  border: 1px solid #505070 !important;
   border-radius: var(--sf3pl-radius-sm);
-  padding: 0.2rem 0.4rem;
+  padding: 0.25rem 0.45rem !important;
   font-size: var(--sf3pl-font-sm);
-  background: var(--sf3pl-card-bg);
+  background: #1e1e2e !important;
+  color: #d0d0e8 !important;
+  font-family: inherit;
+}
+
+.sf3pl-inline-input:focus,
+.sf3pl-inline-select:focus,
+.sf3pl-inline-textarea:focus {
+  outline: none !important;
+  border-color: var(--sf3pl-primary) !important;
+  box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.25) !important;
+}
+
+.sf3pl-inline-select option {
+  background: #1e1e2e;
+  color: #d0d0e8;
 }
 
 .sf3pl-inline-textarea {
   min-height: 50px;
   resize: vertical;
-  font-family: inherit;
 }
 
 .sf3pl-tag-list {

@@ -214,9 +214,10 @@
             </td>
             <td>
               <select class="sf3pl-inline-select" data-edit-category data-global-index="{{globalIndex}}">
-                {{!-- categories rendered by JS, fallback below --}}
+                {{#each ../categories}}
+                <option value="{{value}}" {{#eq value ../rawCategory}}selected{{/eq}}>{{label}}</option>
+                {{/each}}
               </select>
-              <span class="sf3pl-category-label">{{category}}</span>
             </td>
             <td><small>{{sourceBook}}</small></td>
             <td>{{confidence}}%</td>

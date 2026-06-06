@@ -2,7 +2,7 @@
   "id": "starfinder-thirdparty",
   "title": "Starfinder Third Party Library",
   "description": "A reusable content-management module that allows a GM to import and organize legally owned third-party Starfinder 1E content into Foundry VTT. Supports CSV, JSON, and OCR text import pipelines with full validation and compendium management.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "authors": [
     {
       "name": "Starfinder Third Party Library Contributors",
