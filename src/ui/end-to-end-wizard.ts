@@ -155,22 +155,45 @@ export class EndToEndWizardApp extends HandlebarsApplicationMixin(ApplicationV2)
       // Step 2
       reviewFilter: this.reviewFilter,
       reviewStatusCounts,
-      reviewRows: reviewFiltered.map((entry, pos) => ({
-        globalIndex: this.reviewEntries.indexOf(entry),
-        pos,
-        id: entry.record.id,
-        name: entry.editedName ?? entry.record.name,
-        category: CATEGORY_LABELS[
-          (isValidCategory(entry.editedCategory ?? entry.record.category)
-            ? (entry.editedCategory ?? entry.record.category)
-            : "equipment") as keyof typeof CATEGORY_LABELS
-        ],
-        rawCategory: entry.editedCategory ?? entry.record.category,
-        sourceBook: entry.record.sourceBook,
-        confidence: Math.round(entry.record.confidence * 100),
-        status: entry.status,
-        notes: entry.editedNotes ?? entry.record.notes,
-      })),
+      reviewRows: reviewFiltered.map((entry, pos) => {
+        const rawText: string = entry.record.rawText ?? "";
+        const snippet = rawText.length > 0
+          ? rawText.replace(/\s+/g, " ").trim().slice(0, 140) + (rawText.length > 140 ? "…" : "")
+          : "";
+
+        const structured = entry.record.structuredData as Record<string, unknown> | undefined;
+        const structuredFields = structured
+          ? Object.entries(structured)
+              .filter(([k, v]) => k !== "_category" && v !== null && v !== undefined && v !== "")
+              .map(([k, v]) => ({
+                key: k,
+                value: Array.isArray(v)
+                  ? (v as unknown[]).map((x) => JSON.stringify(x)).join(", ")
+                  : String(v),
+              }))
+          : [];
+
+        return {
+          globalIndex: this.reviewEntries.indexOf(entry),
+          pos,
+          id: entry.record.id,
+          name: entry.editedName ?? entry.record.name,
+          category: CATEGORY_LABELS[
+            (isValidCategory(entry.editedCategory ?? entry.record.category)
+              ? (entry.editedCategory ?? entry.record.category)
+              : "equipment") as keyof typeof CATEGORY_LABELS
+          ],
+          rawCategory: entry.editedCategory ?? entry.record.category,
+          sourceBook: entry.record.sourceBook,
+          confidence: Math.round(entry.record.confidence * 100),
+          status: entry.status,
+          notes: entry.editedNotes ?? entry.record.notes,
+          snippet,
+          rawText,
+          structuredFields,
+          hasDetails: snippet.length > 0 || structuredFields.length > 0,
+        };
+      }),
       totalReview: this.reviewEntries.length,
       acceptedCount: reviewStatusCounts.accepted,
       categories: Object.entries(CATEGORY_LABELS).map(([k, v]) => ({ value: k, label: v })),
@@ -328,6 +351,20 @@ export class EndToEndWizardApp extends HandlebarsApplicationMixin(ApplicationV2)
     html.querySelector<HTMLElement>("[data-action='reject-all']")?.addEventListener("click", () => {
       this.reviewEntries.forEach((e) => { if (e.status === "pending") e.status = "rejected"; });
       void this.render();
+    });
+
+    html.querySelectorAll<HTMLElement>("[data-action='toggle-detail']").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = btn.dataset.globalIndex ?? "0";
+        const detailRow = html.querySelector<HTMLElement>(`[data-detail-for="${idx}"]`);
+        const icon = btn.querySelector<HTMLElement>("i");
+        if (detailRow) {
+          const hidden = detailRow.classList.toggle("sf3pl-detail-hidden");
+          if (icon) {
+            icon.className = hidden ? "fas fa-chevron-down" : "fas fa-chevron-up";
+          }
+        }
+      });
     });
 
     html.querySelectorAll<HTMLElement>("[data-action='accept-record']").forEach((btn) => {
