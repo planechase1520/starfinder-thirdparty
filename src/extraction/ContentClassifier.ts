@@ -7,6 +7,13 @@ import { NpcDetector } from "./NpcDetector.js";
 import { VehicleDetector } from "./VehicleDetector.js";
 import { StarshipDetector } from "./StarshipDetector.js";
 import { SpeciesDetector } from "./SpeciesDetector.js";
+import { EquipmentDetector } from "./EquipmentDetector.js";
+import { AugmentationDetector } from "./AugmentationDetector.js";
+import { FeatDetector } from "./FeatDetector.js";
+import { ThemeDetector } from "./ThemeDetector.js";
+import { ClassDetector } from "./ClassDetector.js";
+import { ArchetypeDetector } from "./ArchetypeDetector.js";
+import { HazardDetector } from "./HazardDetector.js";
 import { ModuleLogger } from "../utils/logger.js";
 
 export interface ClassifierResult {
@@ -18,13 +25,22 @@ export interface ClassifierResult {
 
 export class ContentClassifier {
   private static detectors: IContentDetector[] = [
+    // Highly specific detectors first to reduce false positives on generic content
     new SpeciesDetector(),
+    new ThemeDetector(),
+    new ClassDetector(),
+    new ArchetypeDetector(),
+    new AugmentationDetector(),
+    new FeatDetector(),
+    new HazardDetector(),
+    new StarshipDetector(),
+    new VehicleDetector(),
+    new NpcDetector(),
+    new SpellDetector(),
     new WeaponDetector(),
     new ArmorDetector(),
-    new SpellDetector(),
-    new NpcDetector(),
-    new VehicleDetector(),
-    new StarshipDetector(),
+    // Equipment runs last: broadest net, relies on exclusion of other types
+    new EquipmentDetector(),
   ];
 
   static classify(

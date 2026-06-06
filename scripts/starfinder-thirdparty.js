@@ -8345,7 +8345,7 @@ class EndToEndWizardApp extends HandlebarsApplicationMixin$4(ApplicationV2$4) {
  */
 // ── Module constants ────────────────────────────────────────────────────────
 const MODULE_ID$1 = "starfinder-thirdparty";
-const MODULE_VERSION = "1.3.0";
+const MODULE_VERSION = "1.4.0";
 const SUPPORTED_SYSTEM = "sfrpg";
 // ── init hook ───────────────────────────────────────────────────────────────
 Hooks.once("init", () => {
@@ -11089,15 +11089,800 @@ class SpeciesDetector {
     }
 }
 
+/**
+ * Equipment Detector — identifies general equipment items in SFRPG PDF text.
+ *
+ * SFRPG equipment stat blocks look like:
+ *
+ *   ITEM NAME
+ *   Level X; Price Y credits; Bulk L
+ *   [Description paragraph]
+ *
+ * Key discriminators (never appear in weapon/armor blocks at these thresholds):
+ *   • "Price:" or "price" followed by a credit value
+ *   • "Level" followed by a number (1–20)
+ *   • "Bulk" keyword
+ *   • No weapon damage dice (e.g., "1d6"), EAC/KAC bonus lines, or CR
+ */
+class EquipmentDetector {
+    category = "equipment";
+    canDetect(text) {
+        const lower = text.toLowerCase();
+        const hasPrice = /price\s*[\d,]+|\bprice\s+\d/i.test(text);
+        const hasLevel = /\blevel\s+\d{1,2}\b/i.test(text);
+        const hasBulk = /\bbulk\b/i.test(lower);
+        const hasCapacityOrUsage = /\bcapacity\b|\busage\b/i.test(lower);
+        const isWeapon = /\bdamage\s+\d+d\d+|small\s+arm|long\s+arm|heavy\s+weapon/i.test(text);
+        const isArmor = /\beac\s+bonus\b|\bkac\s+bonus\b|\bmax\s*dex\b/i.test(text);
+        const isNpc = /\bcr\s+\d|\bstr\s+\d|\bfort\s+[+-]\d/i.test(text);
+        const isSpell = /\bcasting\s*time\b|\bschool\s*:/i.test(text);
+        if (isWeapon || isArmor || isNpc || isSpell)
+            return false;
+        let score = 0;
+        if (hasPrice)
+            score += 3;
+        if (hasLevel)
+            score += 2;
+        if (hasBulk)
+            score += 2;
+        if (hasCapacityOrUsage)
+            score += 1;
+        return score >= 4;
+    }
+    detect(text, pageNumber) {
+        if (!this.canDetect(text))
+            return [];
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0)
+            return [];
+        const name = this.extractName(lines);
+        const level = this.extractLevel(text);
+        const price = this.extractPrice(text);
+        const bulk = this.extractBulk(text);
+        const hands = this.extractHands(text);
+        const capacity = this.extractField(text, /capacity\s*[:;]?\s*([^\n;]+)/i);
+        const usage = this.extractField(text, /usage\s*[:;]?\s*([^\n;]+)/i);
+        const slots = this.extractField(text, /upgrade\s*slots?\s*[:;]?\s*(\d+)/i);
+        const description = this.buildDescription(lines, name);
+        let score = 0;
+        if (level > 0)
+            score++;
+        if (price)
+            score++;
+        if (bulk)
+            score++;
+        const confidence = Math.min(0.45 + score * 0.12, 0.95);
+        return [{
+                name: name.trim(),
+                rawText: text,
+                structuredData: { level, price, bulk, hands, capacity, usage, upgradeSlots: slots, description },
+                confidence,
+                startIndex: 0,
+                endIndex: text.length,
+                pageNumber,
+                autoTags: ["equipment"],
+            }];
+    }
+    extractName(lines) {
+        for (const line of lines) {
+            if (!line.includes(":") && !line.includes(";") && /^[A-Z][A-Za-z0-9\s'\-–,]+$/.test(line) && line.length < 70) {
+                return line;
+            }
+        }
+        return lines[0] ?? "Unknown Equipment";
+    }
+    extractLevel(text) {
+        const m = text.match(/\blevel\s+(\d{1,2})\b/i);
+        return m ? parseInt(m[1], 10) : 0;
+    }
+    extractPrice(text) {
+        const m = text.match(/price\s*[:;]?\s*([\d,]+(?:\s*credits?)?)/i);
+        return m ? m[1].trim() : "";
+    }
+    extractBulk(text) {
+        const m = text.match(/bulk\s*[:;]?\s*([^\n;,]+)/i);
+        return m ? m[1].trim().split(/\s/)[0] ?? "" : "";
+    }
+    extractHands(text) {
+        const m = text.match(/\bhands?\s*[:;]?\s*([^\n;,]+)/i);
+        return m ? m[1].trim() : "";
+    }
+    extractField(text, pattern) {
+        const m = text.match(pattern);
+        return m ? m[1].trim() : "";
+    }
+    buildDescription(lines, name) {
+        const skip = /^(level|price|bulk|capacity|usage|upgrade\s*slot|hands?)\b/i;
+        return lines
+            .filter(l => l !== name && !skip.test(l))
+            .join(" ")
+            .trim();
+    }
+}
+
+/**
+ * Augmentation Detector — identifies SFRPG augmentation (cybernetic, biotech,
+ * magitech, neuro-hack) entries in extracted PDF text.
+ *
+ * SFRPG augmentation stat blocks look like:
+ *
+ *   AUGMENTATION NAME          (all-caps heading)
+ *   Cybernetic (or Biotech / Magitech / Neuro-hack)
+ *   System: [body slot]
+ *   Level X; Price Y
+ *   [Description]
+ *
+ * Key discriminators:
+ *   • "System:" followed by a body slot (arm, hand, eyes, ears, brain, etc.)
+ *   • One of: cybernetic / biotech / magitech / neuro-hack
+ *   • Level + Price present
+ */
+const AUGMENTATION_TYPES = ["cybernetic", "biotech", "magitech", "neuro-hack", "neurohack"];
+const BODY_SLOTS = [
+    "arm", "hand", "foot", "leg", "eye", "ear", "brain", "heart",
+    "lungs", "spinal column", "throat", "skin", "all", "none",
+];
+class AugmentationDetector {
+    category = "augmentation";
+    canDetect(text) {
+        const lower = text.toLowerCase();
+        const hasSystem = /\bsystem\s*:/i.test(text);
+        const hasAugType = AUGMENTATION_TYPES.some(t => lower.includes(t));
+        const hasSlot = BODY_SLOTS.some(s => lower.includes(s));
+        const hasLevel = /\blevel\s+\d{1,2}\b/i.test(text);
+        const hasPrice = /\bprice\b/i.test(lower);
+        const isNpc = /\bcr\s+\d|\bfort\s+[+-]\d/i.test(text);
+        const isWeapon = /\bdamage\s+\d+d\d+/i.test(text);
+        if (isNpc || isWeapon)
+            return false;
+        let score = 0;
+        if (hasSystem)
+            score += 4;
+        if (hasAugType)
+            score += 3;
+        if (hasSlot)
+            score += 1;
+        if (hasLevel)
+            score += 1;
+        if (hasPrice)
+            score += 1;
+        return score >= 4;
+    }
+    detect(text, pageNumber) {
+        if (!this.canDetect(text))
+            return [];
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0)
+            return [];
+        const name = this.extractName(lines);
+        const augType = this.extractAugType(text);
+        const system = this.extractSystem(text);
+        const level = this.extractLevel(text);
+        const price = this.extractPrice(text);
+        const description = this.buildDescription(lines, name);
+        let score = 0;
+        if (system)
+            score++;
+        if (augType)
+            score++;
+        if (level > 0)
+            score++;
+        const confidence = Math.min(0.5 + score * 0.13, 0.96);
+        return [{
+                name: name.trim(),
+                rawText: text,
+                structuredData: { augType, system, level, price, description },
+                confidence,
+                startIndex: 0,
+                endIndex: text.length,
+                pageNumber,
+                autoTags: ["augmentation", ...(augType ? [augType.toLowerCase()] : [])],
+            }];
+    }
+    extractName(lines) {
+        for (const line of lines) {
+            if (!line.includes(":") &&
+                !AUGMENTATION_TYPES.some(t => line.toLowerCase() === t) &&
+                /^[A-Z][A-Za-z0-9\s'\-–,]+$/.test(line) &&
+                line.length < 70) {
+                return line;
+            }
+        }
+        return lines[0] ?? "Unknown Augmentation";
+    }
+    extractAugType(text) {
+        const lower = text.toLowerCase();
+        for (const t of AUGMENTATION_TYPES) {
+            if (lower.includes(t))
+                return t.charAt(0).toUpperCase() + t.slice(1);
+        }
+        return "Augmentation";
+    }
+    extractSystem(text) {
+        const m = text.match(/system\s*:\s*([^\n;]+)/i);
+        return m ? m[1].trim() : "";
+    }
+    extractLevel(text) {
+        const m = text.match(/\blevel\s+(\d{1,2})\b/i);
+        return m ? parseInt(m[1], 10) : 0;
+    }
+    extractPrice(text) {
+        const m = text.match(/price\s*[:;]?\s*([\d,]+(?:\s*credits?)?)/i);
+        return m ? m[1].trim() : "";
+    }
+    buildDescription(lines, name) {
+        const skip = /^(system|level|price|cybernetic|biotech|magitech|neuro-?hack)\b/i;
+        return lines.filter(l => l !== name && !skip.test(l)).join(" ").trim();
+    }
+}
+
+/**
+ * Feat Detector — identifies SFRPG feat entries in extracted PDF text.
+ *
+ * SFRPG feat blocks follow this format:
+ *
+ *   FEAT NAME (Combat / General / Skill / etc.)
+ *   Prerequisites: [list or "none"]
+ *   Benefit: [description of what the feat does]
+ *   Special: [optional extra note]
+ *   Normal: [optional note about what characters without the feat can do]
+ *
+ * Key discriminators:
+ *   • "Benefit:" — the single strongest signal (always present on feats)
+ *   • "Prerequisites:" or "Prerequisite:"
+ *   • Optional "(Combat)", "(General)", "(Skill)", "(Teamwork)" tag on the name line
+ *   • No stat-block numbers (no EAC, KAC, CR, Str/Dex/Con)
+ */
+const FEAT_TYPE_TAGS = ["combat", "general", "skill", "teamwork", "gunnery", "psionics"];
+class FeatDetector {
+    category = "feat";
+    canDetect(text) {
+        const hasBenefit = /\bbenefit\s*:/i.test(text);
+        const hasPrerequisite = /\bprerequisites?\s*:/i.test(text);
+        const isNpc = /\bcr\s+\d|\bfort\s+[+-]\d/i.test(text);
+        const isSpell = /\bcasting\s*time\b|\bschool\s*:/i.test(text);
+        const isWeapon = /\bdamage\s+\d+d\d+/i.test(text);
+        if (isNpc || isSpell || isWeapon)
+            return false;
+        let score = 0;
+        if (hasBenefit)
+            score += 4;
+        if (hasPrerequisite)
+            score += 2;
+        return score >= 4;
+    }
+    detect(text, pageNumber) {
+        if (!this.canDetect(text))
+            return [];
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0)
+            return [];
+        const { name, featType } = this.extractNameAndType(lines);
+        const prerequisites = this.extractField(text, /prerequisites?\s*:\s*([^\n]+)/i);
+        const benefit = this.extractMultiLine(text, /benefit\s*:\s*/i, /^(?:special|normal|prerequisite)/i);
+        const special = this.extractField(text, /special\s*:\s*([^\n]+)/i);
+        const normal = this.extractField(text, /normal\s*:\s*([^\n]+)/i);
+        const description = benefit || this.buildDescription(lines, name);
+        let score = 0;
+        if (prerequisites)
+            score++;
+        if (benefit)
+            score++;
+        if (featType)
+            score++;
+        const confidence = Math.min(0.5 + score * 0.13, 0.95);
+        return [{
+                name: name.trim(),
+                rawText: text,
+                structuredData: { featType, prerequisites, benefit, special, normal, description },
+                confidence,
+                startIndex: 0,
+                endIndex: text.length,
+                pageNumber,
+                autoTags: ["feat", ...(featType ? [featType.toLowerCase()] : [])],
+            }];
+    }
+    extractNameAndType(lines) {
+        for (const line of lines) {
+            if (!line.includes(":")) {
+                const typeMatch = line.match(/\(([A-Za-z]+)\)\s*$/);
+                if (typeMatch) {
+                    const featType = typeMatch[1];
+                    const name = line.replace(/\s*\([A-Za-z]+\)\s*$/, "").trim();
+                    return { name, featType };
+                }
+                if (/^[A-Z][A-Za-z0-9\s'\-–]+$/.test(line) && line.length < 70) {
+                    const lower = line.toLowerCase();
+                    const detectedType = FEAT_TYPE_TAGS.find(t => lower.includes(t)) ?? "";
+                    return { name: line, featType: detectedType };
+                }
+            }
+        }
+        return { name: lines[0] ?? "Unknown Feat", featType: "" };
+    }
+    extractField(text, pattern) {
+        const m = text.match(pattern);
+        return m ? m[1].trim() : "";
+    }
+    /**
+     * Extracts a multi-line field value starting after `startPattern` and
+     * ending when a line begins with `stopPattern`.
+     */
+    extractMultiLine(text, startPattern, stopPattern) {
+        const startMatch = text.search(startPattern);
+        if (startMatch < 0)
+            return "";
+        const afterStart = text.slice(startMatch).replace(startPattern, "");
+        const lines = afterStart.split(/\r?\n/);
+        const result = [];
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (result.length > 0 && stopPattern.test(trimmed))
+                break;
+            if (trimmed)
+                result.push(trimmed);
+        }
+        return result.join(" ").trim();
+    }
+    buildDescription(lines, name) {
+        const skip = /^(prerequisites?|benefit|special|normal)\s*:/i;
+        return lines.filter(l => l !== name && !skip.test(l)).join(" ").trim();
+    }
+}
+
+/**
+ * Theme Detector — identifies SFRPG theme entries in extracted PDF text.
+ *
+ * SFRPG theme blocks follow this format:
+ *
+ *   THEME NAME
+ *   Theme Knowledge (1st Level)
+ *   [description of 1st-level theme ability]
+ *   [Level-gated theme abilities at 6th, 12th, 18th level]
+ *
+ * Key discriminators:
+ *   • "Theme Knowledge" — the single strongest signal (unique to themes)
+ *   • Level-gated abilities listed with headings like "6th Level", "12th Level"
+ *   • The word "theme" in context (not a chapter heading)
+ */
+class ThemeDetector {
+    category = "theme";
+    canDetect(text) {
+        const hasThemeKnowledge = /theme\s+knowledge/i.test(text);
+        const isNpc = /\bcr\s+\d|\bfort\s+[+-]\d/i.test(text);
+        const isSpell = /\bcasting\s*time\b|\bschool\s*:/i.test(text);
+        const isWeapon = /\bdamage\s+\d+d\d+/i.test(text);
+        if (isNpc || isSpell || isWeapon)
+            return false;
+        let score = 0;
+        if (hasThemeKnowledge)
+            score += 5;
+        if (/\b6th\s+level\b/i.test(text))
+            score += 1;
+        if (/\b12th\s+level\b/i.test(text))
+            score += 1;
+        if (/\b18th\s+level\b/i.test(text))
+            score += 1;
+        return score >= 4;
+    }
+    detect(text, pageNumber) {
+        if (!this.canDetect(text))
+            return [];
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0)
+            return [];
+        const name = this.extractName(lines);
+        const themeKnowledge = this.extractThemeKnowledge(text);
+        const abilities = this.extractLevelAbilities(text);
+        const description = themeKnowledge || this.buildDescription(lines, name);
+        let score = 0;
+        if (themeKnowledge)
+            score += 2;
+        if (abilities.length > 0)
+            score++;
+        const confidence = Math.min(0.55 + score * 0.1, 0.96);
+        return [{
+                name: name.trim(),
+                rawText: text,
+                structuredData: {
+                    themeKnowledge,
+                    abilityAt6: abilities[0] ?? "",
+                    abilityAt12: abilities[1] ?? "",
+                    abilityAt18: abilities[2] ?? "",
+                    description,
+                },
+                confidence,
+                startIndex: 0,
+                endIndex: text.length,
+                pageNumber,
+                autoTags: ["theme"],
+            }];
+    }
+    extractName(lines) {
+        for (const line of lines) {
+            if (!line.includes(":") &&
+                !/theme\s+knowledge/i.test(line) &&
+                /^[A-Z][A-Za-z0-9\s'\-–]+$/.test(line) &&
+                line.length < 60) {
+                return line;
+            }
+        }
+        return lines[0] ?? "Unknown Theme";
+    }
+    extractThemeKnowledge(text) {
+        const m = text.match(/theme\s+knowledge[^:]*\n([\s\S]{0,400}?)(?:\n\n|\n(?:[A-Z0-9 ]{4,}|\d+th\s+level))/i);
+        if (m)
+            return m[1].replace(/\s+/g, " ").trim();
+        const m2 = text.match(/theme\s+knowledge[^\n]*\n([^\n]{0,300})/i);
+        return m2 ? m2[1].replace(/\s+/g, " ").trim() : "";
+    }
+    /**
+     * Returns [6th, 12th, 18th] level ability names in order.
+     */
+    extractLevelAbilities(text) {
+        const abilities = [];
+        for (const level of ["6th", "12th", "18th"]) {
+            const pattern = new RegExp(`${level}\\s+level[^\\n]*\\n([^\\n]{0,200})`, "i");
+            const m = text.match(pattern);
+            abilities.push(m ? m[1].replace(/\s+/g, " ").trim() : "");
+        }
+        return abilities;
+    }
+    buildDescription(lines, name) {
+        const skip = /^(theme\s+knowledge|\d+th\s+level)/i;
+        return lines.filter(l => l !== name && !skip.test(l)).join(" ").trim();
+    }
+}
+
+/**
+ * Class Detector — identifies SFRPG character class entries in extracted PDF text.
+ *
+ * SFRPG class entries include:
+ *
+ *   CLASS NAME
+ *   Key Ability Score: [ability]
+ *   Hit Points: X   (flat value, not dice)
+ *   Stamina Points: X
+ *   Key Skills: [list]
+ *   [Table of class features by level — BAB, Save Bonuses, Class Features]
+ *
+ * Key discriminators:
+ *   • "Key Ability Score" — strongest signal, unique to class write-ups
+ *   • "Stamina Points" — SFRPG-specific, not in NPC blocks
+ *   • Class feature table entries (Bonus Feat, Mechanic Trick, etc.)
+ */
+class ClassDetector {
+    category = "class";
+    canDetect(text) {
+        const hasKeyAbility = /key\s+ability\s+score/i.test(text);
+        const hasStaminaPoints = /stamina\s+points/i.test(text);
+        const hasClassFeatures = /class\s+feature/i.test(text);
+        const isNpc = /\bcr\s+\d|\bfort\s+[+-]\d/i.test(text);
+        const isSpell = /\bcasting\s*time\b|\bschool\s*:/i.test(text);
+        const isWeapon = /\bdamage\s+\d+d\d+/i.test(text);
+        if (isNpc || isSpell || isWeapon)
+            return false;
+        let score = 0;
+        if (hasKeyAbility)
+            score += 5;
+        if (hasStaminaPoints)
+            score += 3;
+        if (hasClassFeatures)
+            score += 2;
+        if (/\bproficiencies\b/i.test(text))
+            score += 1;
+        return score >= 4;
+    }
+    detect(text, pageNumber) {
+        if (!this.canDetect(text))
+            return [];
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0)
+            return [];
+        const name = this.extractName(lines);
+        const keyAbility = this.extractField(text, /key\s+ability\s+score\s*[:;]?\s*([^\n;]+)/i);
+        const hp = this.extractNumber(text, /hit\s+points\s*[:;]?\s*(\d+)/i);
+        const stamina = this.extractNumber(text, /stamina\s+points\s*[:;]?\s*(\d+)/i);
+        const keySkills = this.extractField(text, /class\s+skills?\s*[:;]?\s*([^\n]+)/i) ||
+            this.extractField(text, /key\s+skills?\s*[:;]?\s*([^\n]+)/i);
+        const proficiencies = this.extractField(text, /proficiencies\s*[:;]?\s*([^\n]+)/i);
+        const description = this.buildDescription(lines, name);
+        let score = 0;
+        if (keyAbility)
+            score++;
+        if (hp > 0)
+            score++;
+        if (stamina > 0)
+            score++;
+        const confidence = Math.min(0.55 + score * 0.12, 0.96);
+        return [{
+                name: name.trim(),
+                rawText: text,
+                structuredData: { keyAbility, hp, stamina, keySkills, proficiencies, description },
+                confidence,
+                startIndex: 0,
+                endIndex: text.length,
+                pageNumber,
+                autoTags: ["class"],
+            }];
+    }
+    extractName(lines) {
+        for (const line of lines) {
+            if (!line.includes(":") &&
+                /^[A-Z][A-Za-z0-9\s'\-–]+$/.test(line) &&
+                line.length < 60) {
+                return line;
+            }
+        }
+        return lines[0] ?? "Unknown Class";
+    }
+    extractField(text, pattern) {
+        const m = text.match(pattern);
+        return m ? m[1].trim() : "";
+    }
+    extractNumber(text, pattern) {
+        const m = text.match(pattern);
+        return m ? parseInt(m[1], 10) : 0;
+    }
+    buildDescription(lines, name) {
+        const skip = /^(key\s+ability|hit\s+points|stamina\s+points|class\s+skills?|key\s+skills?|proficiencies|bab|base\s+attack)\b/i;
+        return lines.filter(l => l !== name && !skip.test(l)).join(" ").trim();
+    }
+}
+
+/**
+ * Archetype Detector — identifies SFRPG archetype entries in extracted PDF text.
+ *
+ * SFRPG archetype blocks follow this format:
+ *
+ *   ARCHETYPE NAME
+ *   [Flavor text / description]
+ *   Associated Classes: [class list]
+ *   Alternate Class Features
+ *   [Level X] [Feature Name] — replaces [original feature]
+ *
+ * Key discriminators:
+ *   • "Alternate Class Features" — strongest signal, almost exclusive to archetypes
+ *   • "Associated Classes:" listing which base classes can take the archetype
+ *   • Level-keyed features using "replaces" or "alters" language
+ */
+class ArchetypeDetector {
+    category = "archetypeFeature";
+    canDetect(text) {
+        const hasAlternateFeatures = /alternate\s+class\s+features?/i.test(text);
+        const hasAssociatedClasses = /associated\s+classes?\s*:/i.test(text);
+        const hasReplaces = /\breplaces?\b/i.test(text);
+        const isNpc = /\bcr\s+\d|\bfort\s+[+-]\d/i.test(text);
+        const isSpell = /\bcasting\s*time\b|\bschool\s*:/i.test(text);
+        const isWeapon = /\bdamage\s+\d+d\d+/i.test(text);
+        if (isNpc || isSpell || isWeapon)
+            return false;
+        let score = 0;
+        if (hasAlternateFeatures)
+            score += 5;
+        if (hasAssociatedClasses)
+            score += 3;
+        if (hasReplaces)
+            score += 1;
+        return score >= 4;
+    }
+    detect(text, pageNumber) {
+        if (!this.canDetect(text))
+            return [];
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0)
+            return [];
+        const name = this.extractName(lines);
+        const associatedClasses = this.extractField(text, /associated\s+classes?\s*:\s*([^\n]+)/i);
+        const altFeatures = this.extractAltFeatures(text);
+        const description = this.buildDescription(lines, name);
+        let score = 0;
+        if (associatedClasses)
+            score++;
+        if (altFeatures.length > 0)
+            score++;
+        const confidence = Math.min(0.55 + score * 0.15, 0.96);
+        return [{
+                name: name.trim(),
+                rawText: text,
+                structuredData: {
+                    associatedClasses,
+                    altFeatureCount: altFeatures.length,
+                    altFeatures: altFeatures.slice(0, 8),
+                    description,
+                },
+                confidence,
+                startIndex: 0,
+                endIndex: text.length,
+                pageNumber,
+                autoTags: ["archetype"],
+            }];
+    }
+    extractName(lines) {
+        for (const line of lines) {
+            if (!line.includes(":") &&
+                !/alternate\s+class/i.test(line) &&
+                /^[A-Z][A-Za-z0-9\s'\-–]+$/.test(line) &&
+                line.length < 60) {
+                return line;
+            }
+        }
+        return lines[0] ?? "Unknown Archetype";
+    }
+    extractField(text, pattern) {
+        const m = text.match(pattern);
+        return m ? m[1].trim() : "";
+    }
+    /**
+     * Extracts alternate class feature entries (level + feature name pairs).
+     */
+    extractAltFeatures(text) {
+        const features = [];
+        const regex = /(?:(\d+)(?:st|nd|rd|th)\s+level|level\s+(\d+))[^:\n]*[:—–]\s*([^\n]{3,80})/gi;
+        let m;
+        while ((m = regex.exec(text)) !== null) {
+            const lvl = m[1] ?? m[2] ?? "?";
+            const feat = m[3].trim();
+            features.push(`Level ${lvl}: ${feat}`);
+        }
+        return features;
+    }
+    buildDescription(lines, name) {
+        const skip = /^(associated\s+classes?|alternate\s+class\s+features?)/i;
+        return lines.filter(l => l !== name && !skip.test(l)).join(" ").trim();
+    }
+}
+
+/**
+ * Hazard Detector — identifies SFRPG hazard entries in extracted PDF text.
+ *
+ * SFRPG hazard stat blocks look like:
+ *
+ *   HAZARD NAME       CR X
+ *   XP Y
+ *   Type [environmental / haunt / trap]
+ *   Perception DC Z (to notice)
+ *   Disable [skill] DC Z
+ *   Trigger [description]
+ *   Effect [description]
+ *
+ * Key discriminators:
+ *   • "Perception DC" + "Disable" — core to hazards, absent in NPC blocks
+ *   • Hazard types: environmental / haunt / trap
+ *   • Has "Trigger:" and/or "Effect:"
+ *   • CR present but no EAC/KAC (distinguishes hazard from NPC)
+ */
+const HAZARD_TYPES = ["environmental", "haunt", "trap", "disease", "radiation", "void", "gravity"];
+class HazardDetector {
+    category = "hazard";
+    canDetect(text) {
+        const hasPerceptionDc = /perception\s+dc\s*\d+/i.test(text);
+        const hasDisable = /\bdisable\b/i.test(text);
+        const hasTrigger = /\btrigger\b/i.test(text);
+        const hasEffect = /\beffect\b/i.test(text);
+        const hasHazardType = HAZARD_TYPES.some(t => new RegExp(`\\b${t}\\b`, "i").test(text));
+        const isFullNpc = /\beac\s*\d+.*\bkac\s*\d+|\bfort\s+[+-]\d+.*\bref\s+[+-]\d+/i.test(text);
+        if (isFullNpc)
+            return false;
+        const isWeapon = /\bdamage\s+\d+d\d+/i.test(text);
+        const isSpell = /\bcasting\s*time\b|\bschool\s*:/i.test(text);
+        if (isWeapon || isSpell)
+            return false;
+        let score = 0;
+        if (hasPerceptionDc)
+            score += 3;
+        if (hasDisable)
+            score += 2;
+        if (hasTrigger)
+            score += 2;
+        if (hasEffect)
+            score += 1;
+        if (hasHazardType)
+            score += 2;
+        return score >= 4;
+    }
+    detect(text, pageNumber) {
+        if (!this.canDetect(text))
+            return [];
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0)
+            return [];
+        const name = this.extractName(lines, text);
+        const cr = this.extractField(text, /\bcr\s+([0-9/]+)/i);
+        const xp = this.extractField(text, /\bxp\s+([\d,]+)/i);
+        const hazardType = this.extractHazardType(text);
+        const perceptionDc = this.extractNumber(text, /perception\s+dc\s*(\d+)/i);
+        const disableDc = this.extractNumber(text, /disable\b[^:]*\bdc\s*(\d+)/i);
+        const trigger = this.extractMultiLine(text, /trigger\s*[:;]?\s*/i, /^(?:effect|reset|onset)/i);
+        const effect = this.extractMultiLine(text, /effect\s*[:;]?\s*/i, /^(?:trigger|reset|onset|countermeasures)/i);
+        const description = this.buildDescription(lines, name);
+        let score = 0;
+        if (cr)
+            score++;
+        if (perceptionDc)
+            score++;
+        if (disableDc)
+            score++;
+        const confidence = Math.min(0.5 + score * 0.13, 0.96);
+        return [{
+                name: name.trim(),
+                rawText: text,
+                structuredData: { cr, xp, hazardType, perceptionDc, disableDc, trigger, effect, description },
+                confidence,
+                startIndex: 0,
+                endIndex: text.length,
+                pageNumber,
+                autoTags: ["hazard", ...(hazardType ? [hazardType.toLowerCase()] : []), ...(cr ? [`cr-${cr}`] : [])],
+            }];
+    }
+    extractName(lines, text) {
+        const crLineMatch = text.match(/^([^\n]+?)\s+\bcr\s+([0-9/]+)/im);
+        if (crLineMatch)
+            return crLineMatch[1].trim();
+        for (const line of lines) {
+            if (!line.includes(":") && /^[A-Z][A-Za-z0-9\s'\-–]+$/.test(line) && line.length < 60) {
+                return line;
+            }
+        }
+        return lines[0] ?? "Unknown Hazard";
+    }
+    extractField(text, pattern) {
+        const m = text.match(pattern);
+        return m ? m[1].trim() : "";
+    }
+    extractNumber(text, pattern) {
+        const m = text.match(pattern);
+        return m ? parseInt(m[1], 10) : 0;
+    }
+    extractHazardType(text) {
+        const lower = text.toLowerCase();
+        for (const t of HAZARD_TYPES) {
+            if (new RegExp(`\\b${t}\\b`).test(lower)) {
+                return t.charAt(0).toUpperCase() + t.slice(1);
+            }
+        }
+        return "Hazard";
+    }
+    extractMultiLine(text, startPattern, stopPattern) {
+        const startIdx = text.search(startPattern);
+        if (startIdx < 0)
+            return "";
+        const afterStart = text.slice(startIdx).replace(startPattern, "");
+        const lines = afterStart.split(/\r?\n/);
+        const result = [];
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (result.length > 0 && stopPattern.test(trimmed))
+                break;
+            if (trimmed)
+                result.push(trimmed);
+        }
+        return result.join(" ").trim();
+    }
+    buildDescription(lines, name) {
+        const skip = /^(cr|xp|type|perception\s+dc|disable|trigger|effect|reset|onset)\b/i;
+        return lines.filter(l => l !== name && !skip.test(l)).join(" ").trim();
+    }
+}
+
 class ContentClassifier {
     static detectors = [
+        // Highly specific detectors first to reduce false positives on generic content
         new SpeciesDetector(),
+        new ThemeDetector(),
+        new ClassDetector(),
+        new ArchetypeDetector(),
+        new AugmentationDetector(),
+        new FeatDetector(),
+        new HazardDetector(),
+        new StarshipDetector(),
+        new VehicleDetector(),
+        new NpcDetector(),
+        new SpellDetector(),
         new WeaponDetector(),
         new ArmorDetector(),
-        new SpellDetector(),
-        new NpcDetector(),
-        new VehicleDetector(),
-        new StarshipDetector(),
+        // Equipment runs last: broadest net, relies on exclusion of other types
+        new EquipmentDetector(),
     ];
     static classify(textBlocks, minConfidence = 0.3) {
         const start = Date.now();
