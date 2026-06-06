@@ -43,20 +43,71 @@ interface PdfJsLib {
   GlobalWorkerOptions: { workerSrc: string };
 }
 
-const WORKER_SRC = "scripts/pdfjs/pdf.worker.mjs";
 const OCR_TEXT_THRESHOLD = 50;
 
-function getPdfjsLib(): PdfJsLib {
-  const lib = (globalThis as Record<string, unknown>)["pdfjsLib"] as
-    | PdfJsLib
-    | undefined;
-  if (!lib) {
-    throw new Error(
-      "[PdfTextExtractor] pdfjsLib is not available on globalThis. " +
-        "Ensure Foundry VTT has loaded PDF.js before using this module."
-    );
+/**
+ * Candidate paths / URLs tried in order when loading PDF.js.
+ *
+ * 1. Foundry VTT V13 bundles PDF.js at /scripts/pdfjs/pdf.mjs  (preferred — no CDN needed).
+ * 2. Older Foundry builds used pdf.min.mjs.
+ * 3. CDN fallback so the feature still works if Foundry ever moves the files.
+ *
+ * Each entry is [libUrl, workerUrl].
+ */
+const PDFJS_CANDIDATES: Array<[string, string]> = [
+  ["/scripts/pdfjs/pdf.mjs",     "/scripts/pdfjs/pdf.worker.mjs"],
+  ["/scripts/pdfjs/pdf.min.mjs", "/scripts/pdfjs/pdf.worker.min.mjs"],
+  [
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs",
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs",
+  ],
+];
+
+let _pdfjsLibCache: PdfJsLib | null = null;
+
+/**
+ * Resolves the PDF.js library, trying in order:
+ *   1. globalThis.pdfjsLib  (set if something already loaded it)
+ *   2. Dynamic import from Foundry's bundled copy (/scripts/pdfjs/pdf.mjs)
+ *   3. Dynamic import from CDN (fallback)
+ *
+ * The result is cached so subsequent calls are free.
+ */
+async function getPdfjsLib(): Promise<PdfJsLib> {
+  if (_pdfjsLibCache) return _pdfjsLibCache;
+
+  const existing = (globalThis as Record<string, unknown>)["pdfjsLib"] as PdfJsLib | undefined;
+  if (existing?.getDocument) {
+    ModuleLogger.info("[PdfTextExtractor] Using pdfjsLib from globalThis.");
+    _pdfjsLibCache = existing;
+    return existing;
   }
-  return lib;
+
+  for (const [libUrl, workerUrl] of PDFJS_CANDIDATES) {
+    try {
+      const mod = await import(/* @vite-ignore */ libUrl) as
+        ({ default: PdfJsLib } | PdfJsLib) & Record<string, unknown>;
+
+      const defaultExport = ("default" in mod) ? (mod as Record<string, unknown>)["default"] : undefined;
+      const lib: PdfJsLib = (defaultExport && typeof (defaultExport as PdfJsLib).getDocument === "function")
+        ? (defaultExport as PdfJsLib)
+        : (mod as unknown as PdfJsLib);
+
+      if (typeof lib?.getDocument !== "function") continue;
+
+      lib.GlobalWorkerOptions.workerSrc = workerUrl;
+      ModuleLogger.info(`[PdfTextExtractor] Loaded PDF.js from: ${libUrl}`);
+      _pdfjsLibCache = lib;
+      return lib;
+    } catch (err) {
+      ModuleLogger.debug(`[PdfTextExtractor] Could not load PDF.js from ${libUrl}: ${String(err)}`);
+    }
+  }
+
+  throw new Error(
+    "[PdfTextExtractor] Could not load PDF.js from any source. " +
+    "Ensure Foundry VTT is up to date or check your network connection for CDN fallback."
+  );
 }
 
 /**
@@ -86,8 +137,7 @@ export class PdfTextExtractor {
       reader.readAsArrayBuffer(file);
     });
 
-    const pdfjsLib = getPdfjsLib();
-    pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_SRC;
+    const pdfjsLib = await getPdfjsLib();
 
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     let pdfDoc: PdfJsDocument;

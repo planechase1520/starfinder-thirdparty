@@ -8637,7 +8637,7 @@ function makeExtractedRecordId() {
     return `er_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-const WORKER_SRC$1 = "scripts/pdfjs/pdf.worker.mjs";
+const WORKER_SRC = "scripts/pdfjs/pdf.worker.mjs";
 const KNOWN_PUBLISHERS = [
     { pattern: /paizo/i, name: "Paizo" },
     { pattern: /starjammer/i, name: "Starjammer" },
@@ -8744,7 +8744,7 @@ class PdfMetadataExtractor {
             ModuleLogger.warn("[PdfMetadataExtractor] pdfjsLib not available; returning filename-based fallback metadata.");
             return this.buildFallback(filename, 0);
         }
-        pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_SRC$1;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_SRC;
         const loadingTask = pdfjsLib.getDocument({ data: buffer });
         try {
             const pdfDoc = await loadingTask.promise;
@@ -8815,15 +8815,62 @@ class PdfMetadataExtractor {
     }
 }
 
-const WORKER_SRC = "scripts/pdfjs/pdf.worker.mjs";
 const OCR_TEXT_THRESHOLD = 50;
-function getPdfjsLib() {
-    const lib = globalThis["pdfjsLib"];
-    if (!lib) {
-        throw new Error("[PdfTextExtractor] pdfjsLib is not available on globalThis. " +
-            "Ensure Foundry VTT has loaded PDF.js before using this module.");
+/**
+ * Candidate paths / URLs tried in order when loading PDF.js.
+ *
+ * 1. Foundry VTT V13 bundles PDF.js at /scripts/pdfjs/pdf.mjs  (preferred — no CDN needed).
+ * 2. Older Foundry builds used pdf.min.mjs.
+ * 3. CDN fallback so the feature still works if Foundry ever moves the files.
+ *
+ * Each entry is [libUrl, workerUrl].
+ */
+const PDFJS_CANDIDATES = [
+    ["/scripts/pdfjs/pdf.mjs", "/scripts/pdfjs/pdf.worker.mjs"],
+    ["/scripts/pdfjs/pdf.min.mjs", "/scripts/pdfjs/pdf.worker.min.mjs"],
+    [
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs",
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs",
+    ],
+];
+let _pdfjsLibCache = null;
+/**
+ * Resolves the PDF.js library, trying in order:
+ *   1. globalThis.pdfjsLib  (set if something already loaded it)
+ *   2. Dynamic import from Foundry's bundled copy (/scripts/pdfjs/pdf.mjs)
+ *   3. Dynamic import from CDN (fallback)
+ *
+ * The result is cached so subsequent calls are free.
+ */
+async function getPdfjsLib() {
+    if (_pdfjsLibCache)
+        return _pdfjsLibCache;
+    const existing = globalThis["pdfjsLib"];
+    if (existing?.getDocument) {
+        ModuleLogger.info("[PdfTextExtractor] Using pdfjsLib from globalThis.");
+        _pdfjsLibCache = existing;
+        return existing;
     }
-    return lib;
+    for (const [libUrl, workerUrl] of PDFJS_CANDIDATES) {
+        try {
+            const mod = await import(/* @vite-ignore */ libUrl);
+            const defaultExport = ("default" in mod) ? mod["default"] : undefined;
+            const lib = (defaultExport && typeof defaultExport.getDocument === "function")
+                ? defaultExport
+                : mod;
+            if (typeof lib?.getDocument !== "function")
+                continue;
+            lib.GlobalWorkerOptions.workerSrc = workerUrl;
+            ModuleLogger.info(`[PdfTextExtractor] Loaded PDF.js from: ${libUrl}`);
+            _pdfjsLibCache = lib;
+            return lib;
+        }
+        catch (err) {
+            ModuleLogger.debug(`[PdfTextExtractor] Could not load PDF.js from ${libUrl}: ${String(err)}`);
+        }
+    }
+    throw new Error("[PdfTextExtractor] Could not load PDF.js from any source. " +
+        "Ensure Foundry VTT is up to date or check your network connection for CDN fallback.");
 }
 /**
  * Extracts raw text content from PDF files using the PDF.js library bundled
@@ -8847,8 +8894,7 @@ class PdfTextExtractor {
             reader.onerror = () => reject(reader.error);
             reader.readAsArrayBuffer(file);
         });
-        const pdfjsLib = getPdfjsLib();
-        pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_SRC;
+        const pdfjsLib = await getPdfjsLib();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         let pdfDoc;
         try {
